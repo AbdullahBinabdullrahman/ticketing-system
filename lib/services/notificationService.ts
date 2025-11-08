@@ -186,11 +186,11 @@ You will be contacted soon to coordinate the service.`,
         });
         
         customerResult = await emailService.sendNotificationEmail(
-          data.customerEmail,
-          content[language].customerSubject,
-          content[language].customerMessage,
-          language
-        );
+        data.customerEmail,
+        content[language].customerSubject,
+        content[language].customerMessage,
+        language
+      );
 
         logger.info("Customer email result", {
           success: customerResult.success,
@@ -548,7 +548,7 @@ Service: ${data.serviceName}
 
 ${data.notes ? `Notes: ${data.notes}` : `Status: ${status}`}`,
       },
-    };
+      };
   }
 
   /**
@@ -580,7 +580,7 @@ ${data.notes ? `Notes: ${data.notes}` : `Status: ${status}`}`,
         });
         
         customerResult = await emailService.sendNotificationEmail(
-          data.customerEmail,
+        data.customerEmail,
           content[language].customerSubject,
           content[language].customerMessage,
           language

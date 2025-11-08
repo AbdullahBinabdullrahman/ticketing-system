@@ -106,12 +106,13 @@ export default function PartnerRequestDetailPage() {
   }, [isAccepting, acceptRequest, id, t, mutate, router]);
 
   // Handle action query parameter (after function declarations)
+  // Only auto-accept, don't auto-show reject modal
   useEffect(() => {
     if (action && request) {
       if (action === "accept" && request.status === "assigned") {
         handleAcceptDirect();
       }
-      if (action === "reject") setShowRejectModal(true);
+      // Don't auto-show reject modal - user must click reject button
     }
   }, [action, request, handleAcceptDirect]);
 
@@ -136,6 +137,18 @@ export default function PartnerRequestDetailPage() {
         error instanceof Error ? error.message : t("errors.generic");
       toast.error(errorMessage);
       setIsSubmitting(false);
+    }
+  };
+
+  /**
+   * Handle closing the reject modal
+   */
+  const handleCloseRejectModal = () => {
+    setShowRejectModal(false);
+    setRejectionReason("");
+    // Remove action query parameter from URL
+    if (action === "reject") {
+      router.push(`/partner/requests/${id}`, undefined, { shallow: true });
     }
   };
 
@@ -249,9 +262,11 @@ export default function PartnerRequestDetailPage() {
   }
 
   const isAssigned = request.status === "assigned";
+  const isRejected = request.status === "rejected";
   const canAccept =
     isAssigned && (timeRemainingMinutes === null || timeRemainingMinutes > 0);
   const canReject = isAssigned; // Can always reject if assigned, even after timer expires
+  const isReadOnly = isRejected; // Rejected requests are read-only
 
   return (
     <PartnerLayout>
@@ -306,8 +321,8 @@ export default function PartnerRequestDetailPage() {
           </BlurFade>
         )}
 
-        {/* Action Buttons */}
-        {isAssigned && (
+        {/* Action Buttons - Only show for assigned status, not for rejected */}
+        {isAssigned && !isReadOnly && (
           <BlurFade delay={0.2}>
             <div className="flex flex-col sm:flex-row gap-3">
               <ShimmerButton
@@ -342,38 +357,71 @@ export default function PartnerRequestDetailPage() {
           </BlurFade>
         )}
 
-        {/* Status Change Dropdown - Show for confirmed, in_progress, or completed */}
-        {(request.status === "confirmed" ||
-          request.status === "in_progress" ||
-          request.status === "completed") && (
-          <BlurFade delay={0.2}>
-            <MagicCard className="p-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t("requests.changeStatus") || "Change Status"}
-              </label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => {
-                  setSelectedStatus(e.target.value);
-                  handleStatusChange(e.target.value);
-                }}
-                disabled={isSubmitting}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-900 dark:border-gray-700 dark:text-white disabled:opacity-50"
-              >
-                <option value="">
-                  {t("requests.selectNewStatus") || "Select new status..."}
-                </option>
-                {getAvailableStatuses().map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
+        {/* Status Change Dropdown - Show for confirmed, in_progress, or completed (not for rejected) */}
+        {!isReadOnly &&
+          (request.status === "confirmed" ||
+            request.status === "in_progress" ||
+            request.status === "completed") && (
+            <BlurFade delay={0.2}>
+              <MagicCard className="p-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t("requests.changeStatus") || "Change Status"}
+                </label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => {
+                    setSelectedStatus(e.target.value);
+                    handleStatusChange(e.target.value);
+                  }}
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-900 dark:border-gray-700 dark:text-white disabled:opacity-50"
+                >
+                  <option value="">
+                    {t("requests.selectNewStatus") || "Select new status..."}
                   </option>
-                ))}
-              </select>
-              {isSubmitting && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  {t("common.updating") || "Updating..."}
-                </p>
-              )}
+                  {getAvailableStatuses().map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+                {isSubmitting && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    {t("common.updating") || "Updating..."}
+                  </p>
+                )}
+              </MagicCard>
+            </BlurFade>
+          )}
+
+        {/* Read-Only Notice for Rejected Requests */}
+        {isReadOnly && (
+          <BlurFade delay={0.2}>
+            <MagicCard className="p-6 bg-red-50 dark:bg-red-900/10 border-2 border-red-200 dark:border-red-800">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-red-900 dark:text-red-200 mb-2">
+                    {t("partner.requests.rejectedTitle") || "Request Rejected"}
+                  </h3>
+                  <p className="text-sm text-red-700 dark:text-red-300 mb-2">
+                    {t("partner.requests.rejectedMessage") ||
+                      "This request has been rejected and is now read-only. No further actions can be taken."}
+                  </p>
+                  {request.rejectionReason && (
+                    <div className="mt-3 p-3 bg-white dark:bg-red-900/20 rounded-lg">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                        {t("requests.rejectionReason")}:
+                      </p>
+                      <p className="text-sm text-gray-900 dark:text-white">
+                        {request.rejectionReason}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </MagicCard>
           </BlurFade>
         )}
@@ -569,64 +617,117 @@ export default function PartnerRequestDetailPage() {
           </BlurFade>
         </div>
 
-        {/* Reject Modal */}
+        {/* Reject Modal - Beautiful Modern Design */}
         {showRejectModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-            <BlurFade delay={0.1} className="w-full max-w-md">
-              <MagicCard className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-full">
-                    <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <BlurFade delay={0.1} className="w-full max-w-2xl">
+              <MagicCard className="p-8 bg-gradient-to-br from-white to-red-50/30 dark:from-gray-900 dark:to-red-900/10">
+                {/* Header with Icon */}
+                <div className="text-center mb-6">
+                  <div className="inline-flex p-4 bg-gradient-to-br from-red-500 to-red-600 rounded-full shadow-lg shadow-red-500/50 mb-4">
+                    <XCircle className="w-12 h-12 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent mb-2">
                     {t("partner.actions.reject")}
-                  </h3>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  {t("partner.actions.rejectConfirm")}
-                </p>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t("partner.actions.rejectionReason")} *
-                  </label>
-                  <textarea
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-900 dark:text-white"
-                    placeholder={t(
-                      "partner.actions.rejectionReasonPlaceholder"
-                    )}
-                    required
-                    minLength={10}
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {rejectionReason.length}/10 {t("common.characters")}{" "}
-                    {t("common.minimum")}
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 text-lg">
+                    {t("partner.actions.rejectConfirm")}
                   </p>
                 </div>
 
-                <div className="flex gap-3">
+                {/* Request Info Card */}
+                <div className="mb-6 p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {t("requests.requestNumber")}
+                    </span>
+                    <span className="font-bold text-gray-900 dark:text-white">
+                      {request?.requestNumber}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {t("requests.customer")}
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {request?.customerName}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Rejection Reason Input */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    {t("partner.actions.rejectionReason")} *
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      rows={5}
+                      className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 dark:bg-gray-800 dark:text-white transition-all resize-none"
+                      placeholder={t(
+                        "partner.actions.rejectionReasonPlaceholder"
+                      )}
+                      required
+                      minLength={10}
+                    />
+                    <div className="absolute bottom-3 right-3">
+                      <span
+                        className={cn(
+                          "text-xs font-medium",
+                          rejectionReason.length >= 10
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-gray-400 dark:text-gray-500"
+                        )}
+                      >
+                        {rejectionReason.length}/10
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {t("common.minimum")} 10 {t("common.characters")}
+                  </p>
+                </div>
+
+                {/* Warning Message */}
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-red-800 dark:text-red-300">
+                    <p className="font-semibold mb-1">
+                      {t("partner.actions.rejectWarningTitle") || "Important"}
+                    </p>
+                    <p>
+                      {t("partner.actions.rejectWarningText") ||
+                        "This action cannot be undone. The request will be returned to unassigned status."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
                   <button
-                    onClick={() => {
-                      setShowRejectModal(false);
-                      setRejectionReason("");
-                    }}
+                    onClick={handleCloseRejectModal}
                     disabled={isSubmitting}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 dark:text-white transition-colors disabled:opacity-50"
+                    className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t("common.cancel")}
                   </button>
-                  <button
+                  <ShimmerButton
                     onClick={handleReject}
                     disabled={isSubmitting || rejectionReason.length < 10}
-                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                    className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSubmitting
-                      ? t("partner.actions.rejecting")
-                      : t("partner.actions.reject")}
-                  </button>
+                    <div className="flex items-center justify-center gap-2">
+                      <XCircle className="w-5 h-5" />
+                      <span className="font-semibold">
+                        {isSubmitting
+                          ? t("partner.actions.rejecting")
+                          : t("partner.actions.reject")}
+                      </span>
+                    </div>
+                  </ShimmerButton>
                 </div>
               </MagicCard>
             </BlurFade>

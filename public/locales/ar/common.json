@@ -726,6 +726,8 @@
       "rejectionReasonPlaceholder": "يرجى تقديم سبب للرفض (10 أحرف على الأقل)",
       "rejectionReasonRequired": "سبب الرفض مطلوب",
       "rejectionReasonMinLength": "سبب الرفض يجب أن يكون 10 أحرف على الأقل",
+      "rejectWarningTitle": "تنبيه هام",
+      "rejectWarningText": "لا يمكن التراجع عن هذا الإجراء. سيتم إرجاع الطلب إلى حالة غير مُكلف وسيتم إشعار العميل.",
       "accepting": "جاري القبول...",
       "rejecting": "جاري الرفض...",
       "updateStatus": "تحديث الحالة",
@@ -858,7 +860,9 @@
       "requestNotes": "ملاحظات الطلب",
       "noNotes": "لا توجد ملاحظات",
       "rejectionInfo": "معلومات الرفض",
-      "rejectedBy": "تم الرفض بواسطة"
+      "rejectedBy": "تم الرفض بواسطة",
+      "rejectedTitle": "تم رفض الطلب",
+      "rejectedMessage": "تم رفض هذا الطلب وأصبح للقراءة فقط. لا يمكن اتخاذ أي إجراءات أخرى."
     },
     "dashboard": {
       "welcome": "مرحباً بعودتك",

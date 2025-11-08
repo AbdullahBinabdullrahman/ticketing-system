@@ -294,7 +294,7 @@ export default function AdminSettingsPage() {
                       }`}
                       placeholder="15"
                     />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <div className="absolute inset-y-0 left-10 flex items-center pr-3 pointer-events-none">
                       <span className="text-gray-500 dark:text-gray-400 text-sm">
                         {t("settings.minutes")}
                       </span>

@@ -687,6 +687,8 @@
       "rejectionReasonPlaceholder": "Please provide a reason for rejection (minimum 10 characters)",
       "rejectionReasonRequired": "Rejection reason is required",
       "rejectionReasonMinLength": "Rejection reason must be at least 10 characters",
+      "rejectWarningTitle": "Important Notice",
+      "rejectWarningText": "This action cannot be undone. The request will be returned to unassigned status and the customer will be notified.",
       "accepting": "Accepting...",
       "rejecting": "Rejecting...",
       "updateStatus": "Update Status",
@@ -798,7 +800,9 @@
       "requestNotes": "Request Notes",
       "noNotes": "No notes provided",
       "rejectionInfo": "Rejection Information",
-      "rejectedBy": "Rejected by"
+      "rejectedBy": "Rejected by",
+      "rejectedTitle": "Request Rejected",
+      "rejectedMessage": "This request has been rejected and is now read-only. No further actions can be taken."
     },
     "dashboard": {
       "welcome": "Welcome back",

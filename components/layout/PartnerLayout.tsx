@@ -177,15 +177,15 @@ export default function PartnerLayout({ children }: PartnerLayoutProps) {
                 </button>
 
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                    <a
-                      href="/partner/profile"
+                  <div className="absolute left-0 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                    <div
+                      onClick={() => router.push("/partner/profile")}
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       <User className="h-4 w-4 mr-3" />
                       {t("navigation.profile")}
-                    </a>
-                    <button
+                    </div>
+                    <div
                       onClick={() => {
                         router.push("/partner/change-password");
                         setUserMenuOpen(false);
@@ -194,7 +194,7 @@ export default function PartnerLayout({ children }: PartnerLayoutProps) {
                     >
                       <Lock className="h-4 w-4 mr-3" />
                       {t("auth.changePassword")}
-                    </button>
+                    </div>
                     <button
                       onClick={handleLogout}
                       className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
