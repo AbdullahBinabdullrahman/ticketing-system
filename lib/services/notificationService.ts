@@ -156,6 +156,11 @@ You will be contacted soon to coordinate the service.`,
       };
 
       // Send to admin
+      logger.info("Attempting to send acceptance email to admin", {
+        adminEmail,
+        requestId: data.requestId,
+      });
+      
       const adminResult = await emailService.sendNotificationEmail(
         adminEmail,
         content[language].adminSubject,
@@ -163,13 +168,41 @@ You will be contacted soon to coordinate the service.`,
         language
       );
 
-      // Send to customer
-      const customerResult = await emailService.sendNotificationEmail(
-        data.customerEmail,
-        content[language].customerSubject,
-        content[language].customerMessage,
-        language
-      );
+      logger.info("Admin email result", {
+        success: adminResult.success,
+        error: adminResult.error,
+        requestId: data.requestId,
+      });
+
+      // Send to customer only if email is valid and not a system email
+      let customerResult = { success: true, error: undefined };
+      
+      if (data.customerEmail && 
+          !data.customerEmail.includes('external@system.internal') &&
+          data.customerEmail.includes('@')) {
+        logger.info("Attempting to send acceptance email to customer", {
+          customerEmail: data.customerEmail,
+          requestId: data.requestId,
+        });
+        
+        customerResult = await emailService.sendNotificationEmail(
+          data.customerEmail,
+          content[language].customerSubject,
+          content[language].customerMessage,
+          language
+        );
+
+        logger.info("Customer email result", {
+          success: customerResult.success,
+          error: customerResult.error,
+          requestId: data.requestId,
+        });
+      } else {
+        logger.info("Skipping customer email (invalid or system email)", {
+          customerEmail: data.customerEmail,
+          requestId: data.requestId,
+        });
+      }
 
       const success = adminResult.success && customerResult.success;
 
@@ -178,12 +211,18 @@ You will be contacted soon to coordinate the service.`,
           requestId: data.requestId,
           recipients: [adminEmail, data.customerEmail],
         });
+      } else {
+        logger.error("Failed to send some acceptance emails", {
+          requestId: data.requestId,
+          adminResult,
+          customerResult,
+        });
       }
 
       return {
         success,
         error: !success
-          ? `Admin: ${adminResult.error}, Customer: ${customerResult.error}`
+          ? `Admin: ${adminResult.error || 'OK'}, Customer: ${customerResult.error || 'OK'}`
           : undefined,
       };
     } catch (error) {
@@ -269,84 +308,320 @@ Please reassign the request to another partner.`,
   }
 
   /**
-   * Send email when request status is updated
-   * @param data Request information
-   * @param newStatus New status of the request
-   * @param language Language preference
+   * Dynamic status-specific email templates
+   * Add new statuses here without creating new methods
    */
-  async sendRequestStatusUpdateEmail(
-    data: RequestNotificationData,
-    newStatus: string,
-    language: Language = "en"
-  ): Promise<{ success: boolean; error?: string }> {
-    try {
-      const statusTranslations = {
-        ar: {
-          in_progress: "قيد التنفيذ",
-          completed: "مكتمل",
-          cancelled: "ملغي",
-        },
-        en: {
-          in_progress: "In Progress",
-          completed: "Completed",
-          cancelled: "Cancelled",
-        },
+  private getStatusEmailContent(status: string, data: RequestNotificationData) {
+    const statusTemplates: Record<string, {
+      ar: {
+        customerSubject: string;
+        customerMessage: string;
+        adminSubject: string;
+        adminMessage: string;
       };
-
-      const translatedStatus =
-        statusTranslations[language][
-          newStatus as keyof (typeof statusTranslations)[Language]
-        ] || newStatus;
-
-      const content = {
+      en: {
+        customerSubject: string;
+        customerMessage: string;
+        adminSubject: string;
+        adminMessage: string;
+      };
+    }> = {
+      in_progress: {
         ar: {
-          subject: `تحديث حالة الطلب - ${data.requestNumber}`,
-          message: `تم تحديث حالة طلب الخدمة الخاص بك.
+          customerSubject: `العمل جارٍ على طلبك - ${data.requestNumber}`,
+          customerMessage: `بدأ ${data.partnerName} العمل على طلب الخدمة الخاص بك.
 
 رقم الطلب: ${data.requestNumber}
-الحالة الجديدة: ${translatedStatus}
+الشريك: ${data.partnerName}
 الفرع: ${data.branchName}
 الخدمة: ${data.serviceName}
 
-${
-  data.notes
-    ? `ملاحظات: ${data.notes}`
-    : "سجل الدخول لعرض تفاصيل الطلب الكاملة."
-}`,
+${data.notes ? `ملاحظات: ${data.notes}\n\n` : ""}سيتم التواصل معك قريباً بشأن أي تحديثات.`,
+          adminSubject: `بدأ العمل على الطلب - ${data.requestNumber}`,
+          adminMessage: `بدأ ${data.partnerName} العمل على الطلب.
+
+رقم الطلب: ${data.requestNumber}
+الشريك: ${data.partnerName}
+الفرع: ${data.branchName}
+العميل: ${data.customerName}
+الخدمة: ${data.serviceName}
+
+${data.notes ? `ملاحظات: ${data.notes}` : "الحالة: قيد التنفيذ"}`,
         },
         en: {
-          subject: `Request Status Update - ${data.requestNumber}`,
-          message: `Your service request status has been updated.
+          customerSubject: `Work Started on Your Request - ${data.requestNumber}`,
+          customerMessage: `${data.partnerName} has started working on your service request.
 
 Request Number: ${data.requestNumber}
-New Status: ${translatedStatus}
+Partner: ${data.partnerName}
+Branch: ${data.branchName}
+Service: ${data.serviceName}
+
+${data.notes ? `Notes: ${data.notes}\n\n` : ""}You will be contacted soon with any updates.`,
+          adminSubject: `Work Started on Request - ${data.requestNumber}`,
+          adminMessage: `${data.partnerName} has started working on the request.
+
+Request Number: ${data.requestNumber}
+Partner: ${data.partnerName}
+Branch: ${data.branchName}
+Customer: ${data.customerName}
+Service: ${data.serviceName}
+
+${data.notes ? `Notes: ${data.notes}` : "Status: In Progress"}`,
+        },
+      },
+      completed: {
+        ar: {
+          customerSubject: `اكتمل طلبك - ${data.requestNumber}`,
+          customerMessage: `أكمل ${data.partnerName} طلب الخدمة الخاص بك.
+
+رقم الطلب: ${data.requestNumber}
+الشريك: ${data.partnerName}
+الفرع: ${data.branchName}
+الخدمة: ${data.serviceName}
+
+${data.notes ? `ملاحظات: ${data.notes}\n\n` : ""}يرجى تقييم تجربتك معنا!
+
+سجل الدخول إلى حسابك لتقييم الخدمة.`,
+          adminSubject: `اكتمل الطلب - ${data.requestNumber}`,
+          adminMessage: `أكمل ${data.partnerName} العمل على الطلب.
+
+رقم الطلب: ${data.requestNumber}
+الشريك: ${data.partnerName}
+الفرع: ${data.branchName}
+العميل: ${data.customerName}
+الخدمة: ${data.serviceName}
+
+${data.notes ? `ملاحظات: ${data.notes}\n\n` : ""}⚠️ تحتاج إلى التحقق: يرجى التأكد من العميل أن الخدمة اكتملت بشكل مرضٍ.`,
+        },
+        en: {
+          customerSubject: `Your Request is Completed - ${data.requestNumber}`,
+          customerMessage: `${data.partnerName} has completed your service request.
+
+Request Number: ${data.requestNumber}
+Partner: ${data.partnerName}
+Branch: ${data.branchName}
+Service: ${data.serviceName}
+
+${data.notes ? `Notes: ${data.notes}\n\n` : ""}Please rate your experience with us!
+
+Log in to your account to rate the service.`,
+          adminSubject: `Request Completed - ${data.requestNumber}`,
+          adminMessage: `${data.partnerName} has completed work on the request.
+
+Request Number: ${data.requestNumber}
+Partner: ${data.partnerName}
+Branch: ${data.branchName}
+Customer: ${data.customerName}
+Service: ${data.serviceName}
+
+${data.notes ? `Notes: ${data.notes}\n\n` : ""}⚠️ Verification Needed: Please confirm with customer that the service was completed satisfactorily.`,
+        },
+      },
+      confirmed: {
+        ar: {
+          customerSubject: `تم تأكيد طلبك - ${data.requestNumber}`,
+          customerMessage: `قام ${data.partnerName} بتأكيد طلب الخدمة الخاص بك.
+
+رقم الطلب: ${data.requestNumber}
+الشريك: ${data.partnerName}
+الفرع: ${data.branchName}
+الخدمة: ${data.serviceName}
+العنوان: ${data.branchAddress}
+
+${data.notes ? `ملاحظات: ${data.notes}\n\n` : ""}سيبدأ العمل على طلبك قريباً.`,
+          adminSubject: `تأكيد الطلب - ${data.requestNumber}`,
+          adminMessage: `قام ${data.partnerName} بتأكيد الطلب.
+
+رقم الطلب: ${data.requestNumber}
+الشريك: ${data.partnerName}
+العميل: ${data.customerName}
+الخدمة: ${data.serviceName}
+
+${data.notes ? `ملاحظات: ${data.notes}` : "الحالة: مؤكد"}`,
+        },
+        en: {
+          customerSubject: `Your Request is Confirmed - ${data.requestNumber}`,
+          customerMessage: `${data.partnerName} has confirmed your service request.
+
+Request Number: ${data.requestNumber}
+Partner: ${data.partnerName}
+Branch: ${data.branchName}
+Service: ${data.serviceName}
+Address: ${data.branchAddress}
+
+${data.notes ? `Notes: ${data.notes}\n\n` : ""}Work on your request will begin soon.`,
+          adminSubject: `Request Confirmed - ${data.requestNumber}`,
+          adminMessage: `${data.partnerName} has confirmed the request.
+
+Request Number: ${data.requestNumber}
+Partner: ${data.partnerName}
+Customer: ${data.customerName}
+Service: ${data.serviceName}
+
+${data.notes ? `Notes: ${data.notes}` : "Status: Confirmed"}`,
+        },
+      },
+      closed: {
+        ar: {
+          customerSubject: `تم إغلاق طلبك - ${data.requestNumber}`,
+          customerMessage: `تم إغلاق طلب الخدمة الخاص بك.
+
+رقم الطلب: ${data.requestNumber}
+الشريك: ${data.partnerName}
+الفرع: ${data.branchName}
+الخدمة: ${data.serviceName}
+
+${data.notes ? `ملاحظات: ${data.notes}\n\n` : ""}شكراً لاستخدام خدماتنا!`,
+          adminSubject: `تم إغلاق الطلب - ${data.requestNumber}`,
+          adminMessage: `تم إغلاق الطلب.
+
+رقم الطلب: ${data.requestNumber}
+الشريك: ${data.partnerName}
+العميل: ${data.customerName}
+الخدمة: ${data.serviceName}
+
+${data.notes ? `ملاحظات: ${data.notes}` : "الحالة: مغلق"}`,
+        },
+        en: {
+          customerSubject: `Your Request is Closed - ${data.requestNumber}`,
+          customerMessage: `Your service request has been closed.
+
+Request Number: ${data.requestNumber}
+Partner: ${data.partnerName}
+Branch: ${data.branchName}
+Service: ${data.serviceName}
+
+${data.notes ? `Notes: ${data.notes}\n\n` : ""}Thank you for using our services!`,
+          adminSubject: `Request Closed - ${data.requestNumber}`,
+          adminMessage: `The request has been closed.
+
+Request Number: ${data.requestNumber}
+Partner: ${data.partnerName}
+Customer: ${data.customerName}
+Service: ${data.serviceName}
+
+${data.notes ? `Notes: ${data.notes}` : "Status: Closed"}`,
+        },
+      },
+    };
+
+    // Return template for status, or generic template if status not found
+    return statusTemplates[status] || {
+      ar: {
+        customerSubject: `تحديث حالة الطلب - ${data.requestNumber}`,
+        customerMessage: `تم تحديث حالة طلب الخدمة الخاص بك إلى: ${status}
+
+رقم الطلب: ${data.requestNumber}
+الشريك: ${data.partnerName}
+الفرع: ${data.branchName}
+الخدمة: ${data.serviceName}
+
+${data.notes ? `ملاحظات: ${data.notes}` : "سجل الدخول لعرض تفاصيل الطلب الكاملة."}`,
+        adminSubject: `تحديث حالة الطلب - ${data.requestNumber}`,
+        adminMessage: `تم تحديث حالة الطلب إلى: ${status}
+
+رقم الطلب: ${data.requestNumber}
+الشريك: ${data.partnerName}
+العميل: ${data.customerName}
+الخدمة: ${data.serviceName}
+
+${data.notes ? `ملاحظات: ${data.notes}` : `الحالة: ${status}`}`,
+      },
+      en: {
+        customerSubject: `Request Status Update - ${data.requestNumber}`,
+        customerMessage: `Your service request status has been updated to: ${status}
+
+Request Number: ${data.requestNumber}
+Partner: ${data.partnerName}
 Branch: ${data.branchName}
 Service: ${data.serviceName}
 
 ${data.notes ? `Notes: ${data.notes}` : "Log in to view full request details."}`,
-        },
-      };
+        adminSubject: `Request Status Update - ${data.requestNumber}`,
+        adminMessage: `The request status has been updated to: ${status}
 
-      const result = await emailService.sendNotificationEmail(
-        data.customerEmail,
-        content[language].subject,
-        content[language].message,
+Request Number: ${data.requestNumber}
+Partner: ${data.partnerName}
+Customer: ${data.customerName}
+Service: ${data.serviceName}
+
+${data.notes ? `Notes: ${data.notes}` : `Status: ${status}`}`,
+      },
+    };
+  }
+
+  /**
+   * Send dynamic status change email (works for any status)
+   * @param data Request information
+   * @param status New status of the request
+   * @param adminEmail Admin email to notify
+   * @param language Language preference
+   */
+  async sendStatusChangeEmail(
+    data: RequestNotificationData,
+    status: string,
+    adminEmail: string,
+    language: Language = "en"
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Get dynamic content based on status
+      const content = this.getStatusEmailContent(status, data);
+
+      // Send to customer (skip if external/system email)
+      let customerResult = { success: true, error: undefined };
+      if (data.customerEmail && 
+          !data.customerEmail.includes('external@system.internal') &&
+          data.customerEmail.includes('@')) {
+        logger.info(`Sending ${status} email to customer`, {
+          customerEmail: data.customerEmail,
+          requestId: data.requestId,
+          status,
+        });
+        
+        customerResult = await emailService.sendNotificationEmail(
+          data.customerEmail,
+          content[language].customerSubject,
+          content[language].customerMessage,
+          language
+        );
+      }
+
+      // Send to admin
+      logger.info(`Sending ${status} email to admin`, {
+        adminEmail,
+        requestId: data.requestId,
+        status,
+      });
+      
+      const adminResult = await emailService.sendNotificationEmail(
+        adminEmail,
+        content[language].adminSubject,
+        content[language].adminMessage,
         language
       );
 
-      if (result.success) {
-        logger.info("Request status update email sent", {
+      const success = customerResult.success && adminResult.success;
+
+      if (success) {
+        logger.info(`${status} status emails sent successfully`, {
           requestId: data.requestId,
-          recipient: data.customerEmail,
-          status: newStatus,
+          recipients: [adminEmail, data.customerEmail],
+          status,
         });
       }
 
-      return result;
+      return {
+        success,
+        error: !success
+          ? `Admin: ${adminResult.error || 'OK'}, Customer: ${customerResult.error || 'OK'}`
+          : undefined,
+      };
     } catch (error) {
-      logger.error("Failed to send request status update email", {
+      logger.error(`Failed to send ${status} status emails`, {
         error,
         requestId: data.requestId,
+        status,
       });
       return {
         success: false,
@@ -599,4 +874,5 @@ export default notificationService;
 
 // Export the class for testing purposes
 export { NotificationService };
+
 

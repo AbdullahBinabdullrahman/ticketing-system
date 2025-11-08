@@ -51,9 +51,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/requests/new",
       icon: PlusCircle,
     },
-    { 
-      name: t("navigation.assignmentQueue"), 
-      href: "/admin/requests/queue", 
+    {
+      name: t("navigation.assignmentQueue"),
+      href: "/admin/requests/queue",
       icon: ClipboardList,
     },
     { name: t("navigation.partners"), href: "/admin/partners", icon: Users },
@@ -64,6 +64,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     },
     { name: t("navigation.categories"), href: "/admin/categories", icon: Tag },
     { name: t("navigation.services"), href: "/admin/services", icon: Settings },
+    { name: t("users.adminUsers"), href: "/admin/users", icon: User },
     { name: t("navigation.reports"), href: "/admin/reports", icon: FileText },
   ];
 

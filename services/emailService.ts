@@ -188,7 +188,7 @@ class EmailService {
       }
 
       const mailOptions = {
-        from: `"Car  Portal" <${this.config.auth.user}>`, // sender address
+        from: `"Ticketing System" <${this.config.auth.user}>`, // sender address
         to: Array.isArray(options.to) ? options.to.join(", ") : options.to,
         subject: options.subject,
         text: options.text,
@@ -1569,7 +1569,9 @@ class EmailService {
           <div class="header">
             <div class="icon-large">${statusIcon}</div>
             <h1 class="title">${message.title}</h1>
-            <p class="subtitle">${isArabic ? "نظام التذاكر" : "Ticketing System"}</p>
+            <p class="subtitle">${
+              isArabic ? "نظام التذاكر" : "Ticketing System"
+            }</p>
           </div>
           
           <!-- Content -->

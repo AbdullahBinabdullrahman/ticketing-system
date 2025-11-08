@@ -247,16 +247,17 @@ export class RequestService {
         );
       }
 
-      if (
-        request[0].status !== "submitted" &&
-        request[0].status !== "unassigned"
-      ) {
+      // Allow assignment/reassignment for all statuses except completed and closed
+      if (["completed", "closed"].includes(request[0].status || "")) {
         throw new AppError(
-          "Request cannot be assigned in current status",
+          "Cannot reassign completed or closed requests",
           400,
           ErrorCodes.INVALID_STATUS_TRANSITION
         );
       }
+
+      // Check if this is a reassignment (request already has a partner)
+      const isReassignment = request[0].partnerId !== null;
 
       // Get partner and branch details
       const partner = await db
@@ -312,6 +313,19 @@ export class RequestService {
         .returning();
       console.log("updatedRequest", updatedRequest);
 
+      // If this is a reassignment, mark previous assignments as inactive
+      if (isReassignment) {
+        await db
+          .update(requestAssignments)
+          .set({ isActive: false })
+          .where(
+            and(
+              eq(requestAssignments.requestId, requestId),
+              eq(requestAssignments.isActive, true)
+            )
+          );
+      }
+
       // Create assignment record
       await db.insert(requestAssignments).values({
         requestId,
@@ -320,33 +334,49 @@ export class RequestService {
         assignedByUserId,
         assignedAt: new Date(),
         response: "pending",
+        isActive: true,
       });
 
       // Log status change
+      const logMessage = isReassignment
+        ? `Reassigned to ${partner[0].name} - ${branch[0].name}`
+        : `Assigned to ${partner[0].name} - ${branch[0].name}`;
+
       await this.logStatusChange(
         requestId,
         "assigned",
         assignedByUserId,
-        `Assigned to ${partner[0].name} - ${branch[0].name}`
+        logMessage
       );
 
       // Notify customer
+      const customerMessage = isReassignment
+        ? `Your request has been reassigned to ${partner[0].name}`
+        : `Your request has been assigned to ${partner[0].name}`;
+
       await this.notifyUser(
         request[0].customerId,
         "request_assigned",
-        "Request Assigned",
-        `Your request has been assigned to ${partner[0].name}`,
+        isReassignment ? "Request Reassigned" : "Request Assigned",
+        customerMessage,
         requestId
       );
 
       // Notify partner users
+      const partnerMessage = isReassignment
+        ? `Request reassigned to your branch`
+        : `New request assigned to your branch`;
+
       await this.notifyPartnerBranchUsers(
         data.branchId,
         "request_assigned",
-        "New Request Assigned",
-        `New request assigned to your branch`,
+        isReassignment ? "Request Reassigned" : "New Request Assigned",
+        partnerMessage,
         requestId
       );
+
+      // Send email notification to partner
+      await this.sendAssignmentEmail(requestId, partner[0], branch[0]);
 
       // Get updated request with details
       const requestWithDetails = await this.getRequestWithDetails(requestId);
@@ -483,6 +513,9 @@ export class RequestService {
           `Request ${request[0].requestNumber} has been confirmed`,
           requestId
         );
+
+        // Send email notifications to customer and admin team
+        await this.sendRequestAcceptedEmail(requestId);
       } else if (data.status === "rejected") {
         await this.notifyUser(
           request[0].customerId,
@@ -497,6 +530,9 @@ export class RequestService {
           `Request ${request[0].requestNumber} has been rejected and needs reassignment`,
           requestId
         );
+
+        // Send email notification to admin team about rejection
+        await this.sendRequestRejectedEmail(requestId, data.rejectionReason);
       } else if (data.status === "in_progress") {
         await this.notifyUser(
           request[0].customerId,
@@ -505,7 +541,7 @@ export class RequestService {
           "The partner has started working on your request",
           requestId
         );
-        
+
         // Send email notification to customer for in_progress status
         await this.sendStatusChangeEmail(requestId, "in_progress", data.notes);
       } else if (data.status === "completed") {
@@ -522,7 +558,7 @@ export class RequestService {
           `Request ${request[0].requestNumber} has been completed and needs verification`,
           requestId
         );
-        
+
         // Send email notification to customer and admins for completed status
         await this.sendStatusChangeEmail(requestId, "completed", data.notes);
       }
@@ -751,7 +787,7 @@ export class RequestService {
 
       // Apply filters
       if (filters.status) {
-        whereConditions.push(sql`${requests.status} = ${filters.status}::request_status_enum`);
+        whereConditions.push(eq(requests.status, filters.status));
       }
       if (filters.categoryId) {
         whereConditions.push(eq(requests.categoryId, filters.categoryId));
@@ -1244,7 +1280,7 @@ export class RequestService {
       }
 
       // Use configuration service for global config
-      const { configurationService } = await import('./configurationService');
+      const { configurationService } = await import("./configurationService");
       return await configurationService.getSlaTimeout();
     } catch (error) {
       logger.error("Get SLA timeout failed", {
@@ -1259,12 +1295,12 @@ export class RequestService {
     const transitions: Record<string, string[]> = {
       submitted: ["assigned"],
       assigned: ["confirmed", "rejected"],
-      confirmed: ["in_progress"],
-      in_progress: ["completed"],
-      completed: ["closed"],
+      confirmed: ["in_progress"], // Partner can start work
+      in_progress: ["completed", "confirmed"], // Can go back to confirmed or forward to completed
+      completed: ["in_progress", "closed"], // Can go back to in_progress or close
       rejected: ["assigned"],
       unassigned: ["assigned"],
-      closed: [],
+      closed: [], // Closed is final
     };
     return transitions[currentStatus] || [];
   }
@@ -1331,8 +1367,8 @@ export class RequestService {
   ): Promise<void> {
     // Get all users assigned to this branch from the branchUsers junction table
     const branchUsersList = await db
-      .select({ 
-        userId: branchUsers.userId 
+      .select({
+        userId: branchUsers.userId,
       })
       .from(branchUsers)
       .where(
@@ -1391,7 +1427,12 @@ export class RequestService {
 
       // Send email to customer
       if (details.customerEmail) {
-        await notificationService.sendRequestStatusUpdateEmail(
+        // Get admin email for notification (use first admin from SLA recipients)
+        const adminEmails =
+          await configurationService.getSlaNotificationRecipients();
+        const adminEmail = adminEmails[0] || "admin@system.com";
+
+        await notificationService.sendStatusChangeEmail(
           {
             requestNumber: details.requestNumber || "",
             requestId,
@@ -1406,7 +1447,8 @@ export class RequestService {
             status: newStatus,
             notes,
           },
-          newStatus,
+          newStatus, // Pass status as separate parameter
+          adminEmail,
           (details.customerLanguage as "en" | "ar") || "en"
         );
 
@@ -1417,12 +1459,13 @@ export class RequestService {
         });
       }
 
-      // For completed status, also send email to admin/operational team
-      if (newStatus === "completed") {
-        const adminEmails = await configurationService.getSlaNotificationRecipients();
-        
+      // For in_progress and completed statuses, also send email to admin/operational team
+      if (newStatus === "in_progress" || newStatus === "completed") {
+        const adminEmails =
+          await configurationService.getSlaNotificationRecipients();
+
         for (const adminEmail of adminEmails) {
-          await notificationService.sendRequestStatusUpdateEmail(
+          await notificationService.sendStatusChangeEmail(
             {
               requestNumber: details.requestNumber || "",
               requestId,
@@ -1437,8 +1480,9 @@ export class RequestService {
               status: newStatus,
               notes,
             },
-            newStatus,
-            "en" // Admin emails default to English
+            newStatus, // Pass status as separate parameter
+            adminEmail,
+            (details.customerLanguage as "en" | "ar") || "en"
           );
         }
 
@@ -1453,6 +1497,341 @@ export class RequestService {
         error,
         requestId,
         status: newStatus,
+      });
+      // Don't throw error - email failures shouldn't break the status update
+    }
+  }
+
+  /**
+   * Send email notification when a request is assigned to a partner
+   */
+  private async sendAssignmentEmail(
+    requestId: number,
+    partner: { id: number; name: string; contactEmail?: string | null },
+    branch: { id: number; name: string; address?: string | null }
+  ): Promise<void> {
+    try {
+      // Get full request details for email
+      const requestDetails = await db
+        .select({
+          requestNumber: requests.requestNumber,
+          customerName: requests.customerName,
+          customerPhone: requests.customerPhone,
+          customerAddress: requests.customerAddress,
+          customerEmail: users.email,
+          customerLanguage: users.languagePreference,
+          serviceName: services.name,
+          categoryName: categories.name,
+        })
+        .from(requests)
+        .leftJoin(customers, eq(requests.customerId, customers.id))
+        .leftJoin(users, eq(customers.userId, users.id))
+        .leftJoin(services, eq(requests.serviceId, services.id))
+        .leftJoin(categories, eq(requests.categoryId, categories.id))
+        .where(eq(requests.id, requestId))
+        .limit(1);
+
+      if (requestDetails.length === 0) {
+        logger.warn("Request not found for assignment email", { requestId });
+        return;
+      }
+
+      const details = requestDetails[0];
+
+      // If partner doesn't have a contact email, try to get branch users' emails
+      const emailRecipients: string[] = [];
+
+      if (partner.contactEmail) {
+        emailRecipients.push(partner.contactEmail);
+      }
+
+      // Get branch users' emails
+      const branchUserEmails = await db
+        .select({
+          email: users.email,
+          languagePreference: users.languagePreference,
+        })
+        .from(branchUsers)
+        .leftJoin(users, eq(branchUsers.userId, users.id))
+        .where(
+          and(
+            eq(branchUsers.branchId, branch.id),
+            eq(branchUsers.isActive, true),
+            eq(branchUsers.isDeleted, false)
+          )
+        );
+
+      // Add branch users' emails
+      for (const branchUser of branchUserEmails) {
+        if (branchUser.email && !emailRecipients.includes(branchUser.email)) {
+          emailRecipients.push(branchUser.email);
+        }
+      }
+
+      if (emailRecipients.length === 0) {
+        logger.warn("No email recipients found for partner assignment", {
+          requestId,
+          partnerId: partner.id,
+          branchId: branch.id,
+        });
+        return;
+      }
+
+      // Prepare notification data
+      const notificationData = {
+        requestNumber: details.requestNumber || "",
+        requestId,
+        customerName: details.customerName || "",
+        customerEmail: details.customerEmail || "",
+        partnerName: partner.name,
+        partnerEmail: emailRecipients[0], // Primary email
+        branchName: branch.name,
+        branchAddress: branch.address || "",
+        serviceName: details.serviceName || "",
+        categoryName: details.categoryName || "",
+        status: "assigned",
+      };
+
+      // Send email to all recipients
+      for (const email of emailRecipients) {
+        try {
+          // Determine language preference (default to English)
+          const userLanguage =
+            branchUserEmails.find((u) => u.email === email)
+              ?.languagePreference || "en";
+          const language = (userLanguage === "ar" ? "ar" : "en") as "en" | "ar";
+
+          const result = await notificationService.sendRequestAssignedEmail(
+            { ...notificationData, partnerEmail: email },
+            language
+          );
+
+          if (!result.success) {
+            logger.error("Failed to send assignment email to recipient", {
+              error: result.error,
+              recipient: email,
+              requestId,
+            });
+          }
+        } catch (emailError) {
+          logger.error("Failed to send assignment email to recipient", {
+            error: emailError,
+            recipient: email,
+            requestId,
+          });
+        }
+      }
+
+      logger.info("Assignment emails sent to partner", {
+        requestId,
+        partnerId: partner.id,
+        branchId: branch.id,
+        recipients: emailRecipients.length,
+      });
+    } catch (error) {
+      logger.error("Failed to send assignment emails", {
+        error,
+        requestId,
+        partnerId: partner.id,
+      });
+      // Don't throw error - email failures shouldn't break the assignment
+    }
+  }
+
+  /**
+   * Send email notification when a partner accepts a request
+   */
+  private async sendRequestAcceptedEmail(requestId: number): Promise<void> {
+    try {
+      // Get full request details for email
+      const requestDetails = await db
+        .select({
+          requestNumber: requests.requestNumber,
+          customerName: requests.customerName,
+          customerEmail: users.email,
+          customerLanguage: users.languagePreference,
+          partnerName: partners.name,
+          partnerEmail: partners.contactEmail,
+          branchName: branches.name,
+          branchAddress: branches.address,
+          serviceName: services.name,
+          categoryName: categories.name,
+        })
+        .from(requests)
+        .leftJoin(customers, eq(requests.customerId, customers.id))
+        .leftJoin(users, eq(customers.userId, users.id))
+        .leftJoin(partners, eq(requests.partnerId, partners.id))
+        .leftJoin(branches, eq(requests.branchId, branches.id))
+        .leftJoin(services, eq(requests.serviceId, services.id))
+        .leftJoin(categories, eq(requests.categoryId, categories.id))
+        .where(eq(requests.id, requestId))
+        .limit(1);
+
+      if (requestDetails.length === 0) {
+        logger.warn("Request not found for acceptance email", { requestId });
+        return;
+      }
+
+      const details = requestDetails[0];
+
+      // Prepare notification data
+      const notificationData = {
+        requestNumber: details.requestNumber || "",
+        requestId,
+        customerName: details.customerName || "",
+        customerEmail: details.customerEmail || "",
+        partnerName: details.partnerName || "",
+        partnerEmail: details.partnerEmail || "",
+        branchName: details.branchName || "",
+        branchAddress: details.branchAddress || "",
+        serviceName: details.serviceName || "",
+        categoryName: details.categoryName || "",
+        status: "confirmed",
+      };
+
+      // Get admin/operational team emails
+      const adminEmails =
+        await configurationService.getSlaNotificationRecipients();
+
+      if (adminEmails.length === 0) {
+        logger.warn("No admin emails configured for acceptance notifications");
+      }
+
+      // Send emails to admin team
+      for (const adminEmail of adminEmails) {
+        try {
+          const result = await notificationService.sendRequestAcceptedEmail(
+            notificationData,
+            adminEmail,
+            "en" // Admin emails default to English
+          );
+
+          if (!result.success) {
+            logger.error("Failed to send acceptance email to admin", {
+              error: result.error,
+              recipient: adminEmail,
+              requestId,
+            });
+          }
+        } catch (emailError) {
+          logger.error("Failed to send acceptance email to admin", {
+            error: emailError,
+            recipient: adminEmail,
+            requestId,
+          });
+        }
+      }
+
+      logger.info("Request acceptance emails sent", {
+        requestId,
+        recipients: adminEmails.length,
+      });
+    } catch (error) {
+      logger.error("Failed to send request acceptance emails", {
+        error,
+        requestId,
+      });
+      // Don't throw error - email failures shouldn't break the status update
+    }
+  }
+
+  /**
+   * Send email notification when a partner rejects a request
+   */
+  private async sendRequestRejectedEmail(
+    requestId: number,
+    rejectionReason?: string
+  ): Promise<void> {
+    try {
+      // Get full request details for email
+      const requestDetails = await db
+        .select({
+          requestNumber: requests.requestNumber,
+          customerName: requests.customerName,
+          customerEmail: users.email,
+          partnerName: partners.name,
+          partnerEmail: partners.contactEmail,
+          branchName: branches.name,
+          branchAddress: branches.address,
+          serviceName: services.name,
+          categoryName: categories.name,
+        })
+        .from(requests)
+        .leftJoin(customers, eq(requests.customerId, customers.id))
+        .leftJoin(users, eq(customers.userId, users.id))
+        .leftJoin(partners, eq(requests.partnerId, partners.id))
+        .leftJoin(branches, eq(requests.branchId, branches.id))
+        .leftJoin(services, eq(requests.serviceId, services.id))
+        .leftJoin(categories, eq(requests.categoryId, categories.id))
+        .where(eq(requests.id, requestId))
+        .limit(1);
+
+      if (requestDetails.length === 0) {
+        logger.warn("Request not found for rejection email", { requestId });
+        return;
+      }
+
+      const details = requestDetails[0];
+
+      // Prepare notification data
+      const notificationData = {
+        requestNumber: details.requestNumber || "",
+        requestId,
+        customerName: details.customerName || "",
+        customerEmail: details.customerEmail || "",
+        partnerName: details.partnerName || "",
+        partnerEmail: details.partnerEmail || "",
+        branchName: details.branchName || "",
+        branchAddress: details.branchAddress || "",
+        serviceName: details.serviceName || "",
+        categoryName: details.categoryName || "",
+        status: "rejected",
+        rejectionReason,
+      };
+
+      // Get admin/operational team emails
+      const adminEmails =
+        await configurationService.getSlaNotificationRecipients();
+
+      if (adminEmails.length === 0) {
+        logger.warn("No admin emails configured for rejection notifications");
+        return;
+      }
+
+      // Send emails to admin team
+      for (const adminEmail of adminEmails) {
+        try {
+          const result = await notificationService.sendRequestRejectedEmail(
+            notificationData,
+            adminEmail,
+            "en" // Admin emails default to English
+          );
+
+          if (!result.success) {
+            logger.error("Failed to send rejection email to admin", {
+              error: result.error,
+              recipient: adminEmail,
+              requestId,
+            });
+          }
+        } catch (emailError) {
+          logger.error("Failed to send rejection email to admin", {
+            error: emailError,
+            recipient: adminEmail,
+            requestId,
+          });
+        }
+      }
+
+      logger.info("Request rejection emails sent to admin team", {
+        requestId,
+        recipients: adminEmails.length,
+        rejectionReason,
+      });
+    } catch (error) {
+      logger.error("Failed to send request rejection emails", {
+        error,
+        requestId,
       });
       // Don't throw error - email failures shouldn't break the status update
     }
@@ -1492,10 +1871,13 @@ export class RequestService {
       const details = requestDetails[0];
 
       // Get admin and operational team emails
-      const recipients = await configurationService.getSlaNotificationRecipients();
+      const recipients =
+        await configurationService.getSlaNotificationRecipients();
 
       if (recipients.length === 0) {
-        logger.warn("No admin/operational team emails configured for new request notifications");
+        logger.warn(
+          "No admin/operational team emails configured for new request notifications"
+        );
         return;
       }
 
@@ -1541,7 +1923,7 @@ Please log in to the admin portal to assign this request to a partner.`,
             content.en.message,
             "en"
           );
-          
+
           if (!result.success) {
             logger.error("Failed to send new request email to recipient", {
               error: result.error,

@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import axios from "axios";
+
 import http from "@/lib/utils/http";
 
 export function useCustomerAuth() {
@@ -26,13 +26,15 @@ export function useCustomerAuth() {
             // Get secret from environment (exposed via Next.js public env var)
             const secret = process.env.NEXT_PUBLIC_TEST_SECRET || "";
 
-            const response = await http.post("/api/customer/test-token", null, {
+            const response = await http.post("/customer/test-token", null, {
               headers: {
                 "X-Test-Secret": secret,
               },
             });
             token = response.data.token;
-            localStorage.setItem("customerToken", token);
+            if (token) {
+              localStorage.setItem("customerToken", token);
+            }
             console.log("✅ Test customer token generated automatically");
           } catch (error) {
             console.error("Failed to generate test token:", error);

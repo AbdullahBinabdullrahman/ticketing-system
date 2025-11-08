@@ -90,6 +90,11 @@ export const partnerFiltersSchema = z.object({
     message: "Category ID must be positive",
   }),
   search: z.string().optional(),
+  includeBranches: z.preprocess((val) => {
+    if (val === "true") return true;
+    if (val === "false") return false;
+    return false;
+  }, z.boolean().optional()),
   page: requiredNumberFromQuery.refine((val) => val >= 1, {
     message: "Page must be at least 1",
   }),

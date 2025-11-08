@@ -169,8 +169,7 @@ export const userSessions = pgTable("user_sessions", {
   userId: integer("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  token: varchar("token", { length: 500 }).notNull().unique(),
-  refreshToken: varchar("refresh_token", { length: 500 }).notNull().unique(),
+  sessionId: varchar("session_id", { length: 100 }).notNull().unique(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   deviceInfo: text("device_info"),
   ipAddress: varchar("ip_address", { length: 45 }),

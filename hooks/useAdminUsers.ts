@@ -4,7 +4,7 @@
  */
 
 import useSWR from "swr";
-import { adminHttp } from "../lib/utils/adminHttp";
+import adminHttp from "../lib/utils/http";
 
 export interface AdminUser {
   id: number;
@@ -14,9 +14,12 @@ export interface AdminUser {
   roleId: number;
   roleName: string;
   userType: string;
+  partnerId?: number | null;
+  partnerName?: string | null;
   languagePreference: string;
   isActive: boolean;
   lastLoginAt?: Date | null;
+  emailVerifiedAt?: Date | null;
   createdAt: Date;
 }
 
@@ -46,7 +49,7 @@ export interface CreateAdminUserInput {
 export interface UpdateAdminUserInput {
   name?: string;
   email?: string;
-  phone?: string;
+  phone?: string | null;
   roleId?: number;
   isActive?: boolean;
   languagePreference?: "en" | "ar";
@@ -93,7 +96,7 @@ export function useCreateAdminUser() {
  */
 export function useUpdateAdminUser() {
   return async (userId: number, data: UpdateAdminUserInput) => {
-    const response = await adminHttp.patch(`/admin/users/${userId}`, data);
+    const response = await adminHttp.put(`/admin/users/${userId}`, data);
     return response.data;
   };
 }
@@ -107,4 +110,3 @@ export function useDeleteAdminUser() {
     return response.data;
   };
 }
-

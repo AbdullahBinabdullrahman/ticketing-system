@@ -11,11 +11,11 @@ import {
   AlertCircle,
   TrendingUp,
   Star,
-  XCircle,
 } from "lucide-react";
 import { BlurFade } from "../../components/ui/blur-fade";
 import { usePartnerStats } from "../../hooks/usePartnerStats";
 import Link from "next/link";
+import { Skeleton, StatsCardSkeleton } from "../../components/ui/skeleton";
 
 export default function PartnerDashboard() {
   const { t, i18n } = useTranslation("common");
@@ -24,8 +24,71 @@ export default function PartnerDashboard() {
   if (isLoading) {
     return (
       <PartnerLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="space-y-6" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
+          {/* Header Skeleton */}
+          <div className="mb-8">
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-5 w-96" />
+          </div>
+
+          {/* Stats Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <StatsCardSkeleton key={i} />
+            ))}
+          </div>
+
+          {/* Performance Metrics Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+              >
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-lg" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-8 w-20" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Additional Stats Skeleton */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <Skeleton className="h-6 w-48 mb-4" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                >
+                  <Skeleton className="h-4 w-24 mx-auto mb-2" />
+                  <Skeleton className="h-8 w-16 mx-auto" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Actions Skeleton */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[...Array(2)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+              >
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </PartnerLayout>
     );
@@ -35,7 +98,7 @@ export default function PartnerDashboard() {
     <PartnerLayout>
       <div dir={i18n.language === "ar" ? "rtl" : "ltr"}>
         {/* Header */}
-        <BlurFade delay={0.1}>
+        <BlurFade>
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               {t("partner.dashboard.welcome")}
@@ -48,9 +111,9 @@ export default function PartnerDashboard() {
 
         {/* Urgent Requests Alert */}
         {stats.pendingConfirmation > 0 && (
-          <BlurFade delay={0.15}>
+          <BlurFade>
             <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100">
                   {t("partner.dashboard.pendingAction")}

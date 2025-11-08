@@ -11,7 +11,8 @@
     "token:partner": "node scripts/get-token.js partner",
     "token": "node scripts/get-token.js",
     "seed": "tsx lib/db/seed.ts",
-    "create-partner-user": "tsx scripts/create-partner-users.ts"
+    "create-partner-user": "tsx scripts/create-partner-users.ts",
+    "test-request":"tsx scripts/create-test-request.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

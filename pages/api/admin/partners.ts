@@ -36,6 +36,7 @@ export default async function handler(
 
     if (req.method === "GET") {
       // Get partners with filters
+      // Supports optional includeBranches=true to include branch data in response
       const filters = partnerFiltersSchema.parse(req.query);
       const result = await partnerService.getPartners(filters);
 

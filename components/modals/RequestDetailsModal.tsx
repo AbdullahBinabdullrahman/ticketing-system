@@ -48,7 +48,9 @@ export default function RequestDetailsModal({
 }: RequestDetailsModalProps) {
   const { t } = useTranslation("common");
   const { request, isLoading, isError } = useRequest(requestId);
-  const [activeTab, setActiveTab] = useState<"details" | "timeline" | "notes">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "timeline" | "notes">(
+    "details"
+  );
 
   if (!isOpen) return null;
 
@@ -157,7 +159,11 @@ export default function RequestDetailsModal({
                       <motion.div
                         layoutId="activeTab"
                         className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 30,
+                        }}
                       />
                     )}
                   </button>
@@ -222,7 +228,9 @@ export default function RequestDetailsModal({
                               <User className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">{t("common.name")}</p>
+                              <p className="text-sm text-gray-600">
+                                {t("common.name")}
+                              </p>
                               <p className="font-semibold text-gray-900">
                                 {request.customerName}
                               </p>
@@ -233,7 +241,9 @@ export default function RequestDetailsModal({
                               <Phone className="w-5 h-5 text-green-600" />
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">{t("common.phone")}</p>
+                              <p className="text-sm text-gray-600">
+                                {t("common.phone")}
+                              </p>
                               <p className="font-semibold text-gray-900">
                                 {request.customerPhone}
                               </p>
@@ -244,7 +254,9 @@ export default function RequestDetailsModal({
                               <MapPin className="w-5 h-5 text-purple-600" />
                             </div>
                             <div className="flex-1">
-                              <p className="text-sm text-gray-600">{t("common.address")}</p>
+                              <p className="text-sm text-gray-600">
+                                {t("common.address")}
+                              </p>
                               <p className="font-semibold text-gray-900">
                                 {request.customerAddress}
                               </p>
@@ -270,7 +282,9 @@ export default function RequestDetailsModal({
                               <FileText className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">{t("common.category")}</p>
+                              <p className="text-sm text-gray-600">
+                                {t("common.category")}
+                              </p>
                               <p className="font-semibold text-gray-900">
                                 {request.categoryName || t("common.na")}
                               </p>
@@ -281,7 +295,9 @@ export default function RequestDetailsModal({
                               <Package className="w-5 h-5 text-indigo-600" />
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">{t("common.service")}</p>
+                              <p className="text-sm text-gray-600">
+                                {t("common.service")}
+                              </p>
                               <p className="font-semibold text-gray-900">
                                 {request.serviceName || t("common.na")}
                               </p>
@@ -292,7 +308,9 @@ export default function RequestDetailsModal({
                               <Calendar className="w-5 h-5 text-green-600" />
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">{t("common.created")}</p>
+                              <p className="text-sm text-gray-600">
+                                {t("common.created")}
+                              </p>
                               <p className="font-semibold text-gray-900">
                                 {formatDate(request.createdAt)}
                               </p>
@@ -303,7 +321,9 @@ export default function RequestDetailsModal({
                               <Clock className="w-5 h-5 text-orange-600" />
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">{t("common.updated")}</p>
+                              <p className="text-sm text-gray-600">
+                                {t("common.updated")}
+                              </p>
                               <p className="font-semibold text-gray-900">
                                 {formatDate(request.updatedAt)}
                               </p>
@@ -325,7 +345,9 @@ export default function RequestDetailsModal({
                                 <Building2 className="w-5 h-5 text-green-600" />
                               </div>
                               <div>
-                                <p className="text-sm text-gray-600">{t("common.partner")}</p>
+                                <p className="text-sm text-gray-600">
+                                  {t("common.partner")}
+                                </p>
                                 <p className="font-semibold text-gray-900">
                                   {request.partnerName}
                                 </p>
@@ -337,7 +359,9 @@ export default function RequestDetailsModal({
                                   <MapPin className="w-5 h-5 text-emerald-600" />
                                 </div>
                                 <div>
-                                  <p className="text-sm text-gray-600">{t("common.branch")}</p>
+                                  <p className="text-sm text-gray-600">
+                                    {t("common.branch")}
+                                  </p>
                                   <p className="font-semibold text-gray-900">
                                     {request.branchName}
                                   </p>
@@ -350,7 +374,9 @@ export default function RequestDetailsModal({
                                   <Calendar className="w-5 h-5 text-green-600" />
                                 </div>
                                 <div>
-                                  <p className="text-sm text-gray-600">{t("common.assigned")}</p>
+                                  <p className="text-sm text-gray-600">
+                                    {t("common.assigned")}
+                                  </p>
                                   <p className="font-semibold text-gray-900">
                                     {formatDate(request.assignedAt)}
                                   </p>
@@ -412,17 +438,6 @@ export default function RequestDetailsModal({
                 {t("common.close")}
               </button>
               <div className="flex items-center gap-3">
-                {request && (request.status === "submitted" || request.status === "unassigned") && (
-                  <button
-                    onClick={() => {
-                      /* Handle assign */
-                    }}
-                    className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all font-semibold shadow-md hover:shadow-lg flex items-center gap-2"
-                  >
-                    <Zap className="w-4 h-4" />
-                    {t("quickAssign")}
-                  </button>
-                )}
                 <button
                   onClick={onUpdate}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-md hover:shadow-lg"
@@ -437,4 +452,3 @@ export default function RequestDetailsModal({
     </AnimatePresence>
   );
 }
-

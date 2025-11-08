@@ -11,7 +11,7 @@ import {
   branches,
   partners,
 } from "../../../../../lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import {
   handleApiError,
   sendSuccessResponse,
@@ -178,31 +178,85 @@ export default async function handler(
 
     if (requestDetails.length > 0) {
       const details = requestDetails[0];
-      // Send email notifications (fire and forget - don't wait)
-      notificationService
-        .sendRequestAcceptedEmail(
-          {
-            requestNumber: details.requestNumber || "",
-            requestId: request.id,
-            customerName: details.customerName || "",
-            customerEmail: details.customerEmail || "",
-            partnerName: details.partnerName || "",
-            partnerEmail: details.partnerEmail || "",
-            branchName: details.branchName || "",
-            branchAddress: details.branchAddress || "",
-            serviceName: details.serviceName || "",
-            categoryName: details.categoryName || "",
-            status: "confirmed",
-          },
-          process.env.ADMIN_EMAIL || "admin@example.com", // TODO: Get from config
-          "en"
-        )
-        .catch((error) => {
-          logger.error("Failed to send acceptance notification", {
-            error,
-            requestId,
-          });
+
+      // Fetch all active admin users to notify them
+      const adminUsers = await db
+        .select({
+          email: users.email,
+          name: users.name,
+        })
+        .from(users)
+        .where(
+          and(
+            sql`${users.userType} = 'admin'::user_type_enum`,
+            eq(users.isActive, true),
+            eq(users.isDeleted, false)
+          )
+        );
+
+      logger.info("Fetched admin users for notification", {
+        count: adminUsers.length,
+        admins: adminUsers.map((a) => a.email),
+      });
+
+      // Send email notifications to each admin (fire and forget - don't wait)
+      if (adminUsers.length > 0) {
+        logger.info("Sending acceptance emails to admins", {
+          requestId: request.id,
+          adminCount: adminUsers.length,
+          customerEmail: details.customerEmail,
         });
+
+        for (const admin of adminUsers) {
+          notificationService
+            .sendRequestAcceptedEmail(
+              {
+                requestNumber: details.requestNumber || "",
+                requestId: request.id,
+                customerName: details.customerName || "",
+                customerEmail: details.customerEmail || "",
+                partnerName: details.partnerName || "",
+                partnerEmail: details.partnerEmail || "",
+                branchName: details.branchName || "",
+                branchAddress: details.branchAddress || "",
+                serviceName: details.serviceName || "",
+                categoryName: details.categoryName || "",
+                status: "confirmed",
+              },
+              admin.email || "",
+              "en"
+            )
+            .then((result) => {
+              if (result.success) {
+                logger.info("Acceptance email sent successfully", {
+                  requestId: request.id,
+                  adminEmail: admin.email,
+                });
+              } else {
+                logger.error("Acceptance email failed", {
+                  error: result.error,
+                  requestId: request.id,
+                  adminEmail: admin.email,
+                });
+              }
+            })
+            .catch((error) => {
+              logger.error("Failed to send acceptance notification to admin", {
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                requestId,
+                adminEmail: admin.email,
+              });
+            });
+        }
+      } else {
+        logger.warn(
+          "No active admin users found to notify about request acceptance",
+          {
+            requestId: request.id,
+          }
+        );
+      }
     }
 
     logger.apiResponse(

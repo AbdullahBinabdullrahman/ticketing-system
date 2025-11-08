@@ -1,357 +1,228 @@
-# Implementation Summary: Auto-Unassign SLA & Admin Request Creation
+# Implementation Summary
 
-## ✅ Completed Features
+## Overview
+This document summarizes all changes made to implement:
+1. Partner request details page translation
+2. Email notification fixes for request acceptance
+3. Admin reassignment functionality for all request statuses (except completed/closed)
+4. Testing script for quick request creation and assignment
 
-### Part 1: Auto-Unassign SLA Mechanism (Standalone Cron App)
+---
 
-#### 1. API Endpoint for Cron
-**File:** `pages/api/cron/sla-check.ts`
-- ✅ POST endpoint protected by `CRON_SECRET` header
-- ✅ Calls `slaMonitorService.checkAndUnassignExpired()`
-- ✅ Returns count of unassigned requests and execution duration
-- ✅ Comprehensive logging and error handling
+## 1. Testing Script
 
-#### 2. SLA Monitor Service
-**File:** `lib/services/slaMonitorService.ts`
-- ✅ Queries requests with `status='assigned' AND slaDeadline < NOW()`
-- ✅ Uses database transaction for atomicity
-- ✅ Updates 3 database tables:
-  - `requests`: Sets status to 'unassigned', clears partner/branch/SLA fields
-  - `request_assignments`: Records timeout with response='timeout'
-  - `request_status_log`: Logs status change with system user
-- ✅ Fetches partner name for notifications
-- ✅ Sends admin email notification via `notificationService`
-- ✅ Error handling per request (doesn't fail entire batch)
+### Created: `/scripts/create-test-request.ts`
 
-#### 3. Standalone Cron Application
-**Directory:** `/cron-jobs/`
-
-**Files Created:**
-- ✅ `package.json` - Dependencies and scripts
-- ✅ `index.js` - Main cron application (runs every minute)
-- ✅ `.env.example` - Environment template
-- ✅ `.gitignore` - Ignores node_modules and .env
-- ✅ `README.md` - Comprehensive deployment guide
+A script to quickly create and assign test requests using the **same API flow** as the admin form.
 
 **Features:**
-- ✅ Runs SLA check every minute using node-cron
-- ✅ Calls Next.js API with CRON_SECRET authentication
-- ✅ Detailed logging (info/error/debug levels)
-- ✅ Graceful shutdown handling (SIGINT/SIGTERM)
-- ✅ Unhandled rejection/exception handlers
-- ✅ Auto-exits on 401 (prevents spam)
+- Authenticates as admin user
+- Creates request via `/api/admin/requests/customer` endpoint (same as admin form)
+- Assigns request to partner via `/api/admin/requests/[id]/assign` endpoint
+- Tests full business logic, validation, and notifications
+- Finds partner user by email (`a.maher.bina@gmail.com`)
+- Outputs URLs for easy testing (admin view, partner view, partner accept)
 
-#### 4. Email Notification
-**File:** `lib/services/notificationService.ts`
-- ✅ Added `sendSlaTimeoutEmail()` method
-- ✅ HTML-formatted email with styled template
-- ✅ Includes request number, partner name, and next steps
-- ✅ Comprehensive error handling
+**Why API-based instead of direct database insert?**
+- ✅ Tests the actual API endpoints
+- ✅ Ensures all business logic is executed
+- ✅ Validates authentication and authorization
+- ✅ Triggers email notifications properly
+- ✅ Creates proper audit logs and timeline entries
+- ✅ Tests the full request creation flow
 
----
+**Usage:**
+```bash
+# Make sure dev server is running first
+npm run dev
 
-### Part 2: Admin Request Creation
-
-#### 5. Admin Request API
-**File:** `pages/api/admin/requests/customer.ts`
-- ✅ POST endpoint for creating customer requests
-- ✅ Admin authentication required
-- ✅ Validates request body with `createRequestSchema`
-- ✅ Uses fixed `EXTERNAL_CUSTOMER_ID` (env var, defaults to 1)
-- ✅ Calls `requestService.createRequest()`
-- ✅ Returns created request details
-- ✅ Comprehensive logging
-
-#### 6. Admin Request Form UI
-**File:** `pages/admin/requests/new.tsx`
-- ✅ Full-featured form with 7 input fields:
-  - Customer Name (required)
-  - Customer Phone (required)
-  - Customer Address (required, textarea)
-  - Customer Location (lat/lng via map)
-  - Category (required, dropdown)
-  - Service (optional, filtered by category)
-  - Pickup Option (required, dropdown)
-- ✅ MapBox integration for location selection
-- ✅ Click-to-set-location on map
-- ✅ Get current location button (geolocation API)
-- ✅ Real-time form validation
-- ✅ Dynamic service filtering by category
-- ✅ Indigo/purple theme (consistent with admin portal)
-- ✅ Mobile-first responsive design
-- ✅ RTL support
-- ✅ i18n ready (uses translation keys)
-- ✅ Loading states and error handling
-- ✅ Success redirect to request detail page
-
-#### 7. Navigation Integration
-**File:** `components/layout/AdminLayout.tsx`
-- ✅ Added "Create Request" link with `PlusCircle` icon
-- ✅ Positioned after "Requests" in sidebar
-- ✅ Active state highlighting
-
-#### 8. Translations
-**Files:** `public/locales/en/common.json`, `public/locales/ar/common.json`
-
-**Added Keys:**
-- `requests.createNew`: "Create Request" / "إنشاء طلب"
-- `requests.createForCustomer`: "Create Request for Customer" / "إنشاء طلب للعميل"
-- `requests.customerName`: "Customer Name" / "اسم العميل"
-- `requests.customerPhone`: "Customer Phone" / "هاتف العميل"
-- `requests.customerAddress`: "Customer Address" / "عنوان العميل"
-- `requests.customerLocation`: "Customer Location" / "موقع العميل"
-- `requests.selectCategory`: "Select Category" / "اختر الفئة"
-- `requests.selectService`: "Select Service (Optional)" / "اختر الخدمة (اختياري)"
-- `requests.selectPickupOption`: "Select Pickup Option" / "اختر خيار الاستلام"
-- `requests.clickMapToSetLocation`: "Click on map to set customer location" / "انقر على الخريطة لتحديد موقع العميل"
-- `requests.requestCreatedSuccess`: "Request created successfully" / "تم إنشاء الطلب بنجاح"
-- `requests.viewRequest`: "View Request" / "عرض الطلب"
-- `requests.slaTimeout`: "SLA Timeout" / "انتهت مهلة الاستجابة"
-- `requests.autoUnassignedReason`: "No response within 15 minutes" / "لا يوجد رد خلال 15 دقيقة"
-- `requests.external`: "External" / "خارجي"
-- `requests.creatingRequest`: "Creating Request..." / "جاري إنشاء الطلب..."
-- `requests.locationRequired`: "Location is required" / "الموقع مطلوب"
-- `requests.categoryRequired`: "Category is required" / "الفئة مطلوبة"
-- `requests.pickupOptionRequired`: "Pickup option is required" / "خيار الاستلام مطلوب"
-
-#### 9. Environment Variables Documentation
-**File:** `ENV_VARS_DOCUMENTATION.md`
-- ✅ Documented all required environment variables
-- ✅ Added `CRON_SECRET`, `SYSTEM_USER_ID`, `EXTERNAL_CUSTOMER_ID`
-- ✅ Setup instructions for local and production
-- ✅ Security best practices
+# In another terminal:
+ts-node scripts/create-test-request.ts
+# OR
+npm run test-request
+```
 
 ---
 
-## 📁 Files Created/Modified
+## 2. Admin Reassignment Functionality
 
-### New Files (12)
-1. `/pages/api/cron/sla-check.ts` - Cron API endpoint
-2. `/lib/services/slaMonitorService.ts` - SLA monitoring service
-3. `/pages/api/admin/requests/customer.ts` - Admin request creation API
-4. `/pages/admin/requests/new.tsx` - Admin request creation form
-5. `/cron-jobs/package.json` - Cron app dependencies
-6. `/cron-jobs/index.js` - Cron app main file
-7. `/cron-jobs/.env.example` - Cron app env template
-8. `/cron-jobs/.gitignore` - Cron app git ignore
-9. `/cron-jobs/README.md` - Cron app documentation
-10. `/ENV_VARS_DOCUMENTATION.md` - Environment variables guide
-11. `/IMPLEMENTATION_SUMMARY.md` - This file
+### Changes Made:
 
-### Modified Files (3)
-1. `/lib/services/notificationService.ts` - Added `sendSlaTimeoutEmail()`
-2. `/components/layout/AdminLayout.tsx` - Added navigation link
-3. `/public/locales/en/common.json` - Added request creation translations
-4. `/public/locales/ar/common.json` - Added request creation translations
+#### Frontend: `/pages/admin/requests.tsx`
+- **Line 549**: Changed button visibility from only "submitted" and "unassigned" to all statuses EXCEPT "completed" and "closed"
+- **Line 555-557**: Button label changes dynamically - shows "Quick Assign" for unassigned, "Reassign" for others
+
+#### Backend: `/lib/services/requestService.ts`
+- **Lines 250-260**: Updated validation logic to allow reassignment for all statuses except "completed" and "closed"
+- **Lines 316-327**: Added logic to mark previous assignments as inactive when reassigning
+- **Lines 329-350**: Updated assignment record creation and logging to differentiate between initial assignment and reassignment
+- **Lines 352-376**: Updated notifications to indicate whether it's an assignment or reassignment
+
+#### Translations: Added to both `en` and `ar` common.json
+- `"reassign": "Reassign"` (English)
+- `"reassign": "إعادة التعيين"` (Arabic)
 
 ---
 
-## 🚀 Deployment Instructions
+## 3. Email Notification Improvements
 
-### Next.js App (Vercel)
+### Changes Made:
 
-1. **Add Environment Variables** in Vercel Dashboard:
+#### `/pages/api/partner/requests/[id]/accept.ts`
+- **Lines 203-259**: Enhanced error logging for email notifications
+- Added explicit logging before and after email sending attempts
+- Added success/failure logging with detailed error information
+- Better error tracking in catch blocks
+
+#### `/lib/services/notificationService.ts`
+- **Lines 158-227**: Improved `sendRequestAcceptedEmail` method
+- Added detailed logging before and after each email sending attempt
+- Added validation to skip sending to invalid or system emails (`external@system.internal`)
+- Enhanced error reporting with separate success tracking for admin and customer emails
+- Better error messages indicating which email failed (admin or customer)
+
+**Key Improvements:**
+1. Skips customer emails for system/external customers
+2. Logs all email attempts with success/failure status
+3. Provides detailed error information for debugging
+4. Doesn't fail if customer email is invalid (only logs warning)
+
+---
+
+## 4. Partner Request Details Page Translation
+
+### Changes Made:
+
+#### `/pages/partner/requests/[id].tsx`
+The page was already well-translated with `useTranslation` hook. All UI elements use the `t()` function.
+
+#### Added Missing Translation Key:
+**File:** `public/locales/en/common.json` and `public/locales/ar/common.json`
+
+Added `"cannotAccept"` key:
+- English: `"Cannot accept after timer expires, but you can still reject"`
+- Arabic: `"لا يمكن القبول بعد انتهاء المؤقت، ولكن لا يزال بإمكانك الرفض"`
+
+**Existing Translations Verified:**
+- ✅ `changeStatus` - "Change Status"
+- ✅ `selectNewStatus` - "Select new status..."
+- ✅ `customerInfo` - "Customer Information"
+- ✅ `serviceDetails` - "Service Details"
+- ✅ `assignedBranch` - "Assigned Branch"
+- ✅ All status labels (in_progress, completed, confirmed, etc.)
+- ✅ All partner action labels (accept, reject, accepting, rejecting)
+- ✅ All timer messages
+
+---
+
+## 5. Database Schema Updates
+
+### `/lib/services/requestService.ts`
+Enhanced the `request_assignments` table usage:
+- Now properly tracks `isActive` field
+- Marks previous assignments as inactive during reassignment
+- Maintains full assignment history
+
+---
+
+## Testing Instructions
+
+### 1. Test Reassignment Functionality
+
+**Steps:**
+1. Run the test script: `ts-node scripts/create-test-request.ts`
+2. Login as admin: `admin@ticketing.com`
+3. Go to: http://localhost:3002/admin/requests
+4. Verify "Reassign" button is visible for assigned/confirmed/rejected requests
+5. Verify button is hidden for completed/closed requests
+6. Click "Reassign" and assign to a different partner
+7. Check request timeline to see reassignment logged
+
+### 2. Test Email Notifications
+
+**Steps:**
+1. Create a test request using the script
+2. Login as partner: `a.maher.bina@gmail.com` (or the partner email from the script output)
+3. Go to the partner accept URL (shown in script output)
+4. Click "Accept Request"
+5. Check logs for email sending attempts
+6. Verify admin receives acceptance email
+7. Check for any email errors in console/logs
+
+**What to Look For in Logs:**
+- `"Attempting to send acceptance email to admin"`
+- `"Admin email result"` with success status
+- `"Acceptance email sent successfully"` or error details
+- `"Skipping customer email (invalid or system email)"` for external customers
+
+### 3. Test Translation (RTL/LTR)
+
+**Steps:**
+1. Open partner request details page
+2. Switch language between English and Arabic using language toggle
+3. Verify all text is translated correctly
+4. Verify Arabic shows RTL layout
+5. Check that status labels, buttons, and messages are all translated
+
+---
+
+## Environment Variables Required
+
+Make sure these are set in your `.env` file:
+
 ```env
-CRON_SECRET=<generate-with-openssl-rand-base64-32>
-SYSTEM_USER_ID=1
+# External customer ID (get from seed script output)
 EXTERNAL_CUSTOMER_ID=1
-ADMIN_EMAIL=admin@example.com
-```
 
-2. **Deploy** as usual to Vercel
+# Email configuration (for notifications)
+NEXT_PUBLIC_EMAIL=platform@mesdrive.com
+NEXT_PUBLIC_EMAIL_PASSWORD=your_password
 
-### Cron Jobs App (Separate Hosting)
-
-1. **Choose Hosting Platform:**
-   - VPS (Ubuntu/Debian with PM2) ✨ Recommended
-   - Railway
-   - Heroku Worker Dyno
-   - DigitalOcean App Platform
-   - Render Background Worker
-
-2. **VPS Deployment with PM2:**
-```bash
-# On your VPS
-cd cron-jobs
-npm install
-cp .env.example .env
-# Edit .env with your values:
-# API_BASE_URL=https://your-app.vercel.app
-# CRON_SECRET=same-as-nextjs
-# NODE_ENV=production
-
-# Install PM2 globally
-npm install -g pm2
-
-# Start the app
-pm2 start index.js --name ticketing-cron
-
-# Save PM2 config
-pm2 save
-
-# Setup PM2 to start on boot
-pm2 startup
-```
-
-3. **Monitor Logs:**
-```bash
-pm2 logs ticketing-cron
-pm2 status
+# Database connection
+DATABASE_URL=your_database_url
 ```
 
 ---
 
-## 🧪 Testing Guide
+## Key Files Modified
 
-### 1. Test SLA Auto-Unassign
+1. **Scripts:**
+   - `/scripts/create-test-request.ts` (NEW)
 
-**Prerequisites:**
-- Cron app must be running
-- Next.js app must be deployed
-- Database must have test data
+2. **Frontend:**
+   - `/pages/admin/requests.tsx`
+   - `/pages/partner/requests/[id].tsx`
 
-**Steps:**
-```bash
-# Test API endpoint directly
-curl -X POST http://localhost:3000/api/cron/sla-check \
-  -H "x-cron-secret: your-secret" \
-  -H "Content-Type: application/json" \
-  -v
+3. **Backend:**
+   - `/lib/services/requestService.ts`
+   - `/lib/services/notificationService.ts`
+   - `/pages/api/partner/requests/[id]/accept.ts`
 
-# Expected response:
-# {
-#   "success": true,
-#   "unassignedCount": 0,
-#   "timestamp": "2024-01-01T00:00:00.000Z",
-#   "durationMs": 45
-# }
-
-# To test actual unassignment:
-# 1. Create a request and assign it to a partner
-# 2. Manually update slaDeadline in database to past time:
-UPDATE requests 
-SET sla_deadline = NOW() - INTERVAL '20 minutes' 
-WHERE status = 'assigned' AND id = <request_id>;
-
-# 3. Wait 1 minute for cron to run (or call API manually)
-# 4. Verify request status changed to 'unassigned'
-# 5. Check request_assignments table for timeout record
-# 6. Check admin email for SLA timeout notification
-```
-
-### 2. Test Admin Request Creation
-
-**Steps:**
-1. Login as admin user
-2. Navigate to `/admin/requests/new`
-3. Fill in all required fields:
-   - Customer Name: "Test Customer"
-   - Customer Phone: "+966501234567"
-   - Customer Address: "Test Address, Riyadh"
-   - Click map to set location (or use "Get Current Location")
-   - Select Category
-   - Select Service (optional)
-   - Select Pickup Option
-4. Click "Create Request"
-5. **Verify:**
-   - Success toast appears
-   - Redirected to request detail page
-   - Request appears in `/admin/requests` list
-   - Request has `status='submitted'` and `customerId=1`
-   - Can assign request to partner from queue
+4. **Translations:**
+   - `/public/locales/en/common.json`
+   - `/public/locales/ar/common.json`
 
 ---
 
-## 📊 Database Schema Used
+## Summary
 
-### Tables Updated by SLA Monitor:
-- **requests**: Status changes, clears assignment fields
-- **request_assignments**: Tracks timeout history
-- **request_status_log**: Logs all status changes
+All planned features have been implemented:
 
-### Indexes Used:
-- `idx_requests_sla_deadline` (on `sla_deadline WHERE status='assigned'`)
-- Ensures fast queries for expired requests
+✅ **Testing Script** - Quick way to create and assign test requests
+✅ **Admin Reassignment** - Can reassign requests in any status except completed/closed
+✅ **Email Notifications** - Enhanced logging and error handling for acceptance emails
+✅ **Translations** - Partner request details page fully translated with missing keys added
+✅ **RTL Support** - All pages support both LTR (English) and RTL (Arabic) layouts
 
----
+## Next Steps
 
-## 🔐 Security Considerations
-
-1. **CRON_SECRET**: Must be strong (32+ characters), kept secret
-2. **API Endpoint**: Only accessible with valid secret
-3. **Admin Auth**: Request creation requires admin JWT token
-4. **HTTPS**: Always use HTTPS in production for API calls
-5. **Rate Limiting**: Consider adding rate limiting to cron endpoint
-6. **Firewall**: Optionally restrict cron endpoint to known IPs
+1. Run the test script to verify functionality
+2. Check email logs to debug any email sending issues
+3. Test reassignment in various scenarios
+4. Verify translations in both languages
+5. Test end-to-end flow from request creation to completion
 
 ---
 
-## 📈 Performance Notes
-
-1. **SLA Check Query**: Optimized with database index
-2. **Batch Processing**: Processes all expired requests in single run
-3. **Transaction Safety**: Uses DB transactions for data consistency
-4. **Error Isolation**: Failed email doesn't fail entire operation
-5. **Lightweight**: Cron runs every minute, minimal overhead
-
----
-
-## 🔄 Future Enhancements
-
-### Optional Improvements:
-1. **Vercel Cron**: Replace standalone app with Vercel Cron (for simpler deployment)
-2. **Dashboard**: Add SLA monitoring dashboard to admin portal
-3. **Alerts**: SMS alerts for critical SLA breaches
-4. **Analytics**: Track partner SLA compliance rates
-5. **Configurable SLA**: Allow different SLA times per category/partner
-6. **Retry Logic**: Add exponential backoff for failed API calls in cron
-
----
-
-## ⚠️ Known Limitations
-
-1. **No Customer UI**: Customers can't create requests themselves (API only)
-2. **Fixed Customer ID**: All admin-created requests use ID 1
-3. **No Pickup/Dropoff**: Not yet implemented (future enhancement)
-4. **Email Only**: Notifications via email only (no SMS/push)
-5. **Single Admin Email**: All alerts go to one email address
-
----
-
-## 🎯 Next Steps
-
-### Immediate Actions:
-1. ✅ All core features implemented
-2. ⏳ Deploy cron app to chosen hosting
-3. ⏳ Set environment variables
-4. ⏳ Test SLA auto-unassign flow
-5. ⏳ Test admin request creation
-6. ⏳ Monitor logs for first 24 hours
-
-### Future Development (from BRD):
-1. Pickup and drop-off functionality
-2. Customer request creation API (no UI)
-3. Real-time notifications (websockets)
-4. Partner availability management
-5. Advanced SLA configuration
-6. Performance analytics dashboard
-
----
-
-## 📞 Support
-
-For issues or questions:
-1. Check logs: `pm2 logs ticketing-cron` (cron app)
-2. Check Next.js logs in Vercel dashboard
-3. Verify environment variables are set correctly
-4. Test API endpoint manually with curl
-5. Check database for correct data structure
-
----
-
-**Implementation Status:** ✅ Complete and Ready for Deployment
-
-**Total Time:** Approximately 2 hours of implementation
-**Total Files:** 12 new files, 4 modified files
-**Total Lines of Code:** ~2,000 LOC
-
+**Date:** 2025-01-08  
+**Status:** ✅ All implementations complete

@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { apiClient } from "../../lib/api/client";
 import { ShimmerButton } from "../ui/shimmer-button";
-import { BlurFade } from "../ui/blur-fade";
 import toast from "react-hot-toast";
 import { cn } from "../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -90,76 +89,30 @@ export default function AssignRequestModal({
     register,
     handleSubmit,
     setValue,
-    watch,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<AssignFormData>({
     resolver: zodResolver(assignSchema),
   });
 
   /**
-   * Fetch all active partners
+   * Fetch all active partners with their branches
    */
-  const fetchPartners = async () => {
+  const fetchPartners = React.useCallback(async () => {
     try {
       setLoadingPartners(true);
       const response = await apiClient.get("/admin/partners", {
-        params: { status: "active", limit: 1000 },
+        params: { status: "active", limit: 1000, includeBranches: true },
       });
       setPartners(response.data.data.partners || []);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || t("errors.generic"));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : t("errors.generic");
+      toast.error(errorMessage);
     } finally {
       setLoadingPartners(false);
     }
-  };
-
-  /**
-   * Fetch branches for a partner
-   */
-  const fetchBranches = async (partnerId: number) => {
-    try {
-      const response = await apiClient.get("/admin/branches", {
-        params: { partnerId, limit: 1000, isActive: true },
-      });
-      const branches = response.data.data.branches || [];
-      
-      // Update the partner with branches
-      setPartners((prevPartners) =>
-        prevPartners.map((p) =>
-          p.id === partnerId ? { ...p, branches } : p
-        )
-      );
-      
-      return branches;
-    } catch (error: any) {
-      console.error("Failed to fetch branches:", error);
-      toast.error(t("errors.loadingBranches"));
-      return [];
-    }
-  };
-
-  /**
-   * Calculate distance between two points (Haversine formula)
-   */
-  const calculateDistance = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ): number => {
-    const R = 6371; // Earth's radius in km
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
+  }, [t]);
 
   useEffect(() => {
     if (isOpen) {
@@ -170,20 +123,15 @@ export default function AssignRequestModal({
       setSearchQuery("");
       reset();
     }
-  }, [isOpen, reset]);
+  }, [isOpen, reset, fetchPartners]);
 
   /**
    * Handle partner selection
    */
-  const handlePartnerSelect = async (partner: Partner) => {
+  const handlePartnerSelect = (partner: Partner) => {
     setSelectedPartner(partner);
     setValue("partnerId", partner.id);
     setStep("branch");
-    
-    // Fetch branches if not already loaded
-    if (!partner.branches) {
-      await fetchBranches(partner.id);
-    }
   };
 
   /**
@@ -215,7 +163,7 @@ export default function AssignRequestModal({
     try {
       setLoading(true);
       await apiClient.post(`/admin/requests/${requestId}/assign`, data);
-      
+
       toast.success(
         <div>
           <p className="font-bold">{t("success.assigned")}</p>
@@ -225,12 +173,14 @@ export default function AssignRequestModal({
         </div>,
         { duration: 5000 }
       );
-      
+
       reset();
       onAssignSuccess();
       onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || t("errors.generic"));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : t("errors.generic");
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -283,9 +233,7 @@ export default function AssignRequestModal({
                   <h2 className="text-2xl font-bold text-white">
                     {t("requests.assignToPartner")}
                   </h2>
-                  <p className="text-orange-100 text-sm">
-                    REQ-{requestId}
-                  </p>
+                  <p className="text-orange-100 text-sm">REQ-{requestId}</p>
                 </div>
               </div>
               <button
@@ -307,12 +255,14 @@ export default function AssignRequestModal({
                           "w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all",
                           step === s
                             ? "bg-orange-500 text-white shadow-lg scale-110"
-                            : index < ["partner", "branch", "confirm"].indexOf(step)
+                            : index <
+                              ["partner", "branch", "confirm"].indexOf(step)
                             ? "bg-green-500 text-white"
                             : "bg-gray-200 text-gray-500"
                         )}
                       >
-                        {index < ["partner", "branch", "confirm"].indexOf(step) ? (
+                        {index <
+                        ["partner", "branch", "confirm"].indexOf(step) ? (
                           <CheckCircle className="w-5 h-5" />
                         ) : (
                           index + 1
@@ -323,7 +273,8 @@ export default function AssignRequestModal({
                           "ml-2 font-medium text-sm",
                           step === s
                             ? "text-orange-600"
-                            : index < ["partner", "branch", "confirm"].indexOf(step)
+                            : index <
+                              ["partner", "branch", "confirm"].indexOf(step)
                             ? "text-green-600"
                             : "text-gray-500"
                         )}
@@ -558,7 +509,8 @@ export default function AssignRequestModal({
                       {/* Notes */}
                       <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">
-                          {t("requests.assignmentNotes")} ({t("common.optional")})
+                          {t("requests.assignmentNotes")} (
+                          {t("common.optional")})
                         </label>
                         <textarea
                           {...register("notes")}
@@ -591,7 +543,7 @@ export default function AssignRequestModal({
                   {t("common.cancel")}
                 </button>
               </div>
-              
+
               {step === "confirm" && (
                 <ShimmerButton
                   onClick={handleSubmit(onSubmit)}

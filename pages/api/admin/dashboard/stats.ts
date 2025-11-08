@@ -286,8 +286,10 @@ export default async function handler(
         partnerId: partner.partnerId,
         name: partner.partnerName,
         completedRequests: partner.completedCount,
-        rating: Number(partner.avgRating.toFixed(1)),
-        status: getRatingStatus(Number(partner.avgRating)),
+        rating: partner?.avgRating
+          ? Number(Number(partner.avgRating).toFixed(1))
+          : 0,
+        status: getRatingStatus(Number(partner.avgRating || 0)),
       })),
 
       // Status distribution

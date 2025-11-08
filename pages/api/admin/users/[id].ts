@@ -1,7 +1,8 @@
 /**
- * Admin User Detail API
- * PATCH - Update an admin user
- * DELETE - Delete (soft delete) an admin user
+ * Admin User Management API (Single User)
+ * GET - Get user details
+ * PUT - Update user information
+ * DELETE - Soft delete user
  */
 
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -10,6 +11,9 @@ import {
   updateAdminUser,
   deleteAdminUser,
 } from "../../../../lib/services/adminUserService";
+import { db } from "../../../../lib/db/connection";
+import { users, roles } from "../../../../lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import {
   handleApiError,
   sendSuccessResponse,
@@ -18,17 +22,17 @@ import {
 import { logger } from "../../../../lib/utils/logger";
 import { z } from "zod";
 
-const updateAdminUserSchema = z.object({
+const updateUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").optional(),
   email: z.string().email("Invalid email address").optional(),
-  phone: z.string().optional(),
-  roleId: z.number().int().positive().optional(),
+  phone: z.string().optional().nullable(),
+  roleId: z.number().int().positive("Invalid role ID").optional(),
   isActive: z.boolean().optional(),
   languagePreference: z.enum(["en", "ar"]).optional(),
 });
 
 /**
- * Admin User Detail API Handler
+ * Single User API Handler
  */
 export default async function handler(
   req: NextApiRequest,
@@ -46,10 +50,10 @@ export default async function handler(
     }
 
     const token = authHeader.substring(7);
-    const { userId } = await authService.verifyToken(token);
+    const { userId: currentUserId } = await authService.verifyToken(token);
 
     // Verify admin access
-    const userProfile = await authService.getUserProfile(userId);
+    const userProfile = await authService.getUserProfile(currentUserId);
     if (userProfile.userType !== "admin") {
       return sendErrorResponse(res, {
         message: "Access denied - Admin required",
@@ -58,8 +62,10 @@ export default async function handler(
       });
     }
 
-    const targetUserId = parseInt(req.query.id as string);
-    if (isNaN(targetUserId)) {
+    const { id } = req.query;
+    const userId = parseInt(id as string);
+
+    if (isNaN(userId)) {
       return sendErrorResponse(res, {
         message: "Invalid user ID",
         code: "VALIDATION_ERROR",
@@ -70,15 +76,58 @@ export default async function handler(
     logger.apiRequest(
       req.method!,
       req.url!,
-      userId,
+      currentUserId,
       req.headers["x-request-id"] as string
     );
 
-    // Handle PATCH request - Update user
-    if (req.method === "PATCH") {
-      const validatedData = updateAdminUserSchema.parse(req.body);
+    // Handle GET request - Get user details
+    if (req.method === "GET") {
+      const user = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          phone: users.phone,
+          roleId: users.roleId,
+          roleName: roles.name,
+          userType: users.userType,
+          partnerId: users.partnerId,
+          languagePreference: users.languagePreference,
+          isActive: users.isActive,
+          lastLoginAt: users.lastLoginAt,
+          emailVerifiedAt: users.emailVerifiedAt,
+          createdAt: users.createdAt,
+        })
+        .from(users)
+        .leftJoin(roles, eq(users.roleId, roles.id))
+        .where(and(eq(users.id, userId), eq(users.isDeleted, false)))
+        .limit(1);
 
-      const result = await updateAdminUser(targetUserId, validatedData);
+      if (user.length === 0) {
+        return sendErrorResponse(res, {
+          message: "User not found",
+          code: "USER_NOT_FOUND",
+          statusCode: 404,
+        });
+      }
+
+      logger.apiResponse(
+        req.method!,
+        req.url!,
+        200,
+        0,
+        currentUserId,
+        req.headers["x-request-id"] as string
+      );
+
+      return sendSuccessResponse(res, { user: user[0] }, 200);
+    }
+
+    // Handle PUT request - Update user
+    if (req.method === "PUT") {
+      const validatedData = updateUserSchema.parse(req.body);
+
+      const result = await updateAdminUser(userId, validatedData);
 
       if (!result.success) {
         return sendErrorResponse(res, {
@@ -88,9 +137,10 @@ export default async function handler(
         });
       }
 
-      logger.info("Admin user updated", {
-        userId: targetUserId,
-        updatedBy: userId,
+      logger.info("User updated", {
+        userId,
+        updatedBy: currentUserId,
+        changes: validatedData,
       });
 
       logger.apiResponse(
@@ -98,7 +148,7 @@ export default async function handler(
         req.url!,
         200,
         0,
-        userId,
+        currentUserId,
         req.headers["x-request-id"] as string
       );
 
@@ -107,16 +157,7 @@ export default async function handler(
 
     // Handle DELETE request - Soft delete user
     if (req.method === "DELETE") {
-      // Prevent self-deletion
-      if (targetUserId === userId) {
-        return sendErrorResponse(res, {
-          message: "Cannot delete your own account",
-          code: "AUTHORIZATION_ERROR",
-          statusCode: 403,
-        });
-      }
-
-      const result = await deleteAdminUser(targetUserId);
+      const result = await deleteAdminUser(userId);
 
       if (!result.success) {
         return sendErrorResponse(res, {
@@ -126,9 +167,9 @@ export default async function handler(
         });
       }
 
-      logger.info("Admin user deleted", {
-        userId: targetUserId,
-        deletedBy: userId,
+      logger.info("User deleted (soft delete)", {
+        userId,
+        deletedBy: currentUserId,
       });
 
       logger.apiResponse(
@@ -136,17 +177,17 @@ export default async function handler(
         req.url!,
         200,
         0,
-        userId,
+        currentUserId,
         req.headers["x-request-id"] as string
       );
 
-      return sendSuccessResponse(res, { success: true }, 200);
+      return sendSuccessResponse(res, { message: "User deleted successfully" }, 200);
     }
 
     return res.status(405).json({ message: "Method not allowed" });
   } catch (error) {
     const apiError = handleApiError(error);
-    logger.error("Admin user detail API error", {
+    logger.error("User management API error", {
       error: apiError.message,
       code: apiError.code,
       requestId: req.headers["x-request-id"] as string,
@@ -154,4 +195,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

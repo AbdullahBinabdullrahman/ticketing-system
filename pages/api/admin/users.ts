@@ -1,6 +1,6 @@
 /**
  * Admin Users API
- * GET - List all admin and operational users
+ * GET - List all users (admin, operational, partner, and customer)
  * POST - Create a new admin or operational user
  */
 

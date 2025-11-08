@@ -179,11 +179,13 @@ export async function createAdminUser(
 }
 
 /**
- * Get all admin and operational users
+ * Get all users (admin, operational, partner, and customer)
  */
 export async function getAdminUsers() {
   try {
-    const adminUsers = await db
+    const { partners } = await import("../db/schema");
+    
+    const allUsers = await db
       .select({
         id: users.id,
         name: users.name,
@@ -192,25 +194,23 @@ export async function getAdminUsers() {
         roleId: users.roleId,
         roleName: roles.name,
         userType: users.userType,
+        partnerId: users.partnerId,
+        partnerName: partners.name,
         languagePreference: users.languagePreference,
         isActive: users.isActive,
         lastLoginAt: users.lastLoginAt,
+        emailVerifiedAt: users.emailVerifiedAt,
         createdAt: users.createdAt,
       })
       .from(users)
       .leftJoin(roles, eq(users.roleId, roles.id))
-      .where(
-        and(
-          sql`${users.userType} = 'admin'::user_type_enum`,
-          eq(users.isDeleted, false),
-          eq(users.partnerId, null) // Exclude partner users
-        )
-      )
+      .leftJoin(partners, eq(users.partnerId, partners.id))
+      .where(eq(users.isDeleted, false))
       .orderBy(users.createdAt);
 
-    return adminUsers;
+    return allUsers;
   } catch (error) {
-    logger.error("Error fetching admin users", { error });
+    logger.error("Error fetching all users", { error });
     throw error;
   }
 }

@@ -12,6 +12,7 @@ interface StatsCardProps {
   change?: string;
   changeType?: "positive" | "negative";
   className?: string;
+  onClick?: unknown;
 }
 
 export default function StatsCard({
@@ -59,4 +60,3 @@ export default function StatsCard({
     </div>
   );
 }
-

@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { authService } from "../../../../../lib/services/authService";
 import { db } from "../../../../../lib/db/connection";
 import { requests, requestStatusLog, users, customers, services, categories, branches, partners } from "../../../../../lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import {
   handleApiError,
   sendSuccessResponse,
@@ -163,32 +163,62 @@ export default async function handler(
 
     if (requestDetails.length > 0) {
       const details = requestDetails[0];
-      // Send email notification to admin (fire and forget)
-      notificationService
-        .sendRequestRejectedEmail(
-          {
-            requestNumber: details.requestNumber || "",
-            requestId,
-            customerName: details.customerName || "",
-            customerEmail: details.customerEmail || "",
-            partnerName: details.partnerName || "",
-            partnerEmail: details.partnerEmail || "",
-            branchName: details.branchName || "",
-            branchAddress: details.branchAddress || "",
-            serviceName: details.serviceName || "",
-            categoryName: details.categoryName || "",
-            status: "rejected",
-            rejectionReason: validatedData.reason,
-          },
-          process.env.ADMIN_EMAIL || "admin@example.com", // TODO: Get from config
-          "en"
-        )
-        .catch((error) => {
-          logger.error("Failed to send rejection notification", {
-            error,
-            requestId,
-          });
+      
+      // Fetch all active admin users to notify them
+      const adminUsers = await db
+        .select({
+          email: users.email,
+          name: users.name,
+        })
+        .from(users)
+        .where(
+          and(
+            sql`${users.userType} = 'admin'::user_type_enum`,
+            eq(users.isActive, true),
+            eq(users.isDeleted, false)
+          )
+        );
+
+      logger.info("Fetched admin users for notification", {
+        count: adminUsers.length,
+        admins: adminUsers.map(a => a.email),
+      });
+
+      // Send email notifications to each admin (fire and forget)
+      if (adminUsers.length > 0) {
+        for (const admin of adminUsers) {
+          notificationService
+            .sendRequestRejectedEmail(
+              {
+                requestNumber: details.requestNumber || "",
+                requestId,
+                customerName: details.customerName || "",
+                customerEmail: details.customerEmail || "",
+                partnerName: details.partnerName || "",
+                partnerEmail: details.partnerEmail || "",
+                branchName: details.branchName || "",
+                branchAddress: details.branchAddress || "",
+                serviceName: details.serviceName || "",
+                categoryName: details.categoryName || "",
+                status: "rejected",
+                rejectionReason: validatedData.reason,
+              },
+              admin.email || "",
+              "en"
+            )
+            .catch((error) => {
+              logger.error("Failed to send rejection notification to admin", {
+                error,
+                requestId,
+                adminEmail: admin.email,
+              });
+            });
+        }
+      } else {
+        logger.warn("No active admin users found to notify about request rejection", {
+          requestId: request.id,
         });
+      }
     }
 
     logger.apiResponse(

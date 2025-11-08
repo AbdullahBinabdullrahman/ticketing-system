@@ -27,7 +27,7 @@ export async function seedDatabase() {
     let operationRole = await db
       .select()
       .from(roles)
-      .where(eq(roles.name, "operation"));
+      .where(eq(roles.name, "operational"));
     let partnerRole = await db
       .select()
       .from(roles)
@@ -50,7 +50,7 @@ export async function seedDatabase() {
       operationRole = await db
         .insert(roles)
         .values({
-          name: "operation",
+          name: "operational",
           description: "Operations team member",
         } as any)
         .returning();
@@ -779,6 +779,64 @@ export async function seedDatabase() {
       console.log("✅ Global configurations already exist, skipping");
     }
 
+    // 8. Check for external customer or create one
+    console.log("Checking for external customer...");
+    const EXTERNAL_CUSTOMER_EMAIL = "external@system.internal";
+    const EXTERNAL_CUSTOMER_NAME = "External Customer (System)";
+
+    let externalCustomerUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, EXTERNAL_CUSTOMER_EMAIL));
+
+    let externalCustomerId: number;
+
+    if (externalCustomerUser.length === 0) {
+      console.log("  Creating external customer user...");
+      const externalPassword = await bcrypt.hash(
+        Math.random().toString(36).substring(2) +
+          Math.random().toString(36).substring(2),
+        12
+      );
+
+      externalCustomerUser = await db
+        .insert(users)
+        .values({
+          name: EXTERNAL_CUSTOMER_NAME,
+          email: EXTERNAL_CUSTOMER_EMAIL,
+          password: externalPassword,
+          roleId: customerRole[0].id,
+          userType: "customer",
+          languagePreference: "en",
+          emailVerifiedAt: new Date(),
+        } as any)
+        .returning();
+    } else {
+      console.log("  ✅ External customer user already exists");
+    }
+
+    // Create customer profile for external customer
+    let externalCustomerProfile = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.userId, externalCustomerUser[0].id));
+
+    if (externalCustomerProfile.length === 0) {
+      console.log("  Creating external customer profile...");
+      externalCustomerProfile = await db
+        .insert(customers)
+        .values({
+          userId: externalCustomerUser[0].id,
+          phone: "+966000000000",
+          preferredLanguage: "en",
+        } as any)
+        .returning();
+      externalCustomerId = externalCustomerProfile[0].id;
+    } else {
+      console.log("  ✅ External customer profile already exists");
+      externalCustomerId = externalCustomerProfile[0].id;
+    }
+
     console.log("✅ Database seeding completed successfully!");
     console.log("\n📋 Created Users:");
     console.log("  - Admin user: admin@ticketing.com / Admin123!");
@@ -797,6 +855,13 @@ export async function seedDatabase() {
     console.log("  - Operation: 11 permissions (all except config_manage)");
     console.log("  - Partner: request_view, request_update, notification_view");
     console.log("  - Customer: No portal permissions (mobile API only)");
+    console.log("\n🔧 External Customer:");
+    console.log(`  - Customer ID: ${externalCustomerId}`);
+    console.log(`  - Email: ${EXTERNAL_CUSTOMER_EMAIL}`);
+    console.log("\n📋 IMPORTANT: Add this to your .env file:");
+    console.log("=".repeat(60));
+    console.log(`EXTERNAL_CUSTOMER_ID=${externalCustomerId}`);
+    console.log("=".repeat(60));
   } catch (error) {
     console.error("❌ Error seeding database:", error);
     throw error;

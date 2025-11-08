@@ -6,7 +6,6 @@ import {
   userSessions,
   customers,
   NewUser,
-  UserSessions,
   NewCustomer,
 } from "../db/schema";
 import { eq, and } from "drizzle-orm";
@@ -236,13 +235,13 @@ export class AuthService {
         sessionId: string;
       };
 
-      // Find session
+      // Find session by sessionId
       const session = await db
         .select()
         .from(userSessions)
         .where(
           and(
-            eq(userSessions.refreshToken, refreshToken),
+            eq(userSessions.sessionId, decoded.sessionId),
             eq(userSessions.isActive, true)
           )
         )
@@ -265,9 +264,10 @@ export class AuthService {
         );
       }
 
-      // Generate new tokens
-      const tokens = await this.generateTokens(
+      // Generate new tokens with same sessionId
+      const tokens = await this.generateTokensForSession(
         decoded.userId,
+        decoded.sessionId,
         session[0].deviceInfo || undefined,
         session[0].ipAddress || undefined
       );
@@ -284,21 +284,29 @@ export class AuthService {
   }
 
   /**
-   * Logout user
+   * Logout user by access token
    */
-  async logout(refreshToken: string): Promise<void> {
+  async logout(token: string): Promise<void> {
     try {
       logger.info("Logging out user");
 
-      // Deactivate session
-      (await db
-        .update(userSessions)
-        .set({ isActive: false } as Partial<UserSessions>)
-        .where(eq(userSessions.refreshToken, refreshToken))) as Promise<{
-        rowCount: number;
-      }>;
+      // Decode token to get sessionId (don't verify, just decode)
+      const decoded = jwt.decode(token) as {
+        userId: number;
+        sessionId: string;
+      } | null;
 
-      logger.info("User logged out successfully");
+      if (decoded && decoded.sessionId) {
+        // Deactivate session by sessionId
+        await db
+          .update(userSessions)
+          .set({ isActive: false })
+          .where(eq(userSessions.sessionId, decoded.sessionId));
+
+        logger.info("User logged out successfully", {
+          sessionId: decoded.sessionId,
+        });
+      }
     } catch (error) {
       logger.error("Logout failed", {
         error: error instanceof Error ? error.message : "Unknown error",
@@ -497,6 +505,23 @@ export class AuthService {
       .toString(36)
       .substr(2, 9)}`;
 
+    return this.generateTokensForSession(
+      userId,
+      sessionId,
+      deviceInfo,
+      ipAddress
+    );
+  }
+
+  /**
+   * Generate JWT tokens for a specific session
+   */
+  private async generateTokensForSession(
+    userId: number,
+    sessionId: string,
+    deviceInfo?: string,
+    ipAddress?: string
+  ): Promise<AuthTokens> {
     // Create access token
     const accessToken = jwt.sign(
       { userId, sessionId } as Record<string, unknown>,
@@ -518,17 +543,50 @@ export class AuthService {
     // Calculate expiration time
     const expiresIn = this.getTokenExpirationTime(JWT_EXPIRES_IN);
 
-    // Store session
-    await db.insert(userSessions).values({
-      userId,
-      token: accessToken,
-      refreshToken,
-      expiresAt: new Date(
-        Date.now() + this.getTokenExpirationTime(JWT_REFRESH_EXPIRES_IN) * 1000
-      ),
-      deviceInfo,
-      ipAddress,
-    });
+    try {
+      // Check if session already exists (for refresh token flow)
+      const existingSession = await db
+        .select()
+        .from(userSessions)
+        .where(eq(userSessions.sessionId, sessionId))
+        .limit(1);
+
+      if (existingSession.length === 0) {
+        // Create new session
+        await db.insert(userSessions).values({
+          userId,
+          sessionId,
+          expiresAt: new Date(
+            Date.now() +
+              this.getTokenExpirationTime(JWT_REFRESH_EXPIRES_IN) * 1000
+          ),
+          deviceInfo,
+          ipAddress,
+        });
+
+        logger.info("Session created successfully", { userId, sessionId });
+      } else {
+        // Update existing session expiration
+        await db
+          .update(userSessions)
+          .set({
+            expiresAt: new Date(
+              Date.now() +
+                this.getTokenExpirationTime(JWT_REFRESH_EXPIRES_IN) * 1000
+            ),
+            isActive: true, // Reactivate if needed
+          })
+          .where(eq(userSessions.sessionId, sessionId));
+
+        logger.info("Session refreshed successfully", { userId, sessionId });
+      }
+    } catch (error) {
+      logger.error("Failed to create/update session", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        userId,
+      });
+      throw new AppError("Failed to create session", 500, "DATABASE_ERROR");
+    }
 
     return {
       accessToken,
@@ -565,6 +623,7 @@ export class AuthService {
     token: string
   ): Promise<{ userId: number; sessionId: string }> {
     try {
+      // Verify JWT signature and expiration
       const decoded = jwt.verify(token, JWT_SECRET) as {
         userId: number;
         sessionId: string;
@@ -575,12 +634,30 @@ export class AuthService {
         .select()
         .from(userSessions)
         .where(
-          and(eq(userSessions.token, token), eq(userSessions.isActive, true))
+          and(
+            eq(userSessions.sessionId, decoded.sessionId),
+            eq(userSessions.isActive, true)
+          )
         )
         .limit(1);
 
       if (session.length === 0) {
-        throw new AppError("Invalid token", 401, ErrorCodes.TOKEN_INVALID);
+        throw new AppError(
+          "Session expired or invalid",
+          401,
+          ErrorCodes.TOKEN_INVALID
+        );
+      }
+
+      // Check if session has expired
+      if (session[0].expiresAt && session[0].expiresAt < new Date()) {
+        // Deactivate expired session
+        await db
+          .update(userSessions)
+          .set({ isActive: false })
+          .where(eq(userSessions.id, session[0].id));
+
+        throw new AppError("Session expired", 401, ErrorCodes.TOKEN_EXPIRED);
       }
 
       return decoded;
@@ -617,7 +694,7 @@ export class AuthService {
 
       // Generate reset token (valid for 1 hour) - only if user exists
       let resetToken = "";
-      
+
       if (user.length > 0) {
         resetToken = jwt.sign(
           {
@@ -628,10 +705,15 @@ export class AuthService {
           JWT_SECRET,
           { expiresIn: "1h" }
         );
-        logger.info("Password reset token generated", { email, userId: user[0].id });
+        logger.info("Password reset token generated", {
+          email,
+          userId: user[0].id,
+        });
       } else {
         // For security, don't reveal if user doesn't exist
-        logger.info("Password reset requested for non-existent email", { email });
+        logger.info("Password reset requested for non-existent email", {
+          email,
+        });
       }
 
       return resetToken;
@@ -658,7 +740,11 @@ export class AuthService {
       };
 
       if (decoded.type !== "password_reset") {
-        throw new AppError("Invalid reset token", 400, ErrorCodes.INVALID_TOKEN);
+        throw new AppError(
+          "Invalid reset token",
+          400,
+          ErrorCodes.TOKEN_INVALID
+        );
       }
 
       // Verify user still exists and is active
@@ -675,7 +761,11 @@ export class AuthService {
         .limit(1);
 
       if (user.length === 0) {
-        throw new AppError("User not found or inactive", 404, ErrorCodes.USER_NOT_FOUND);
+        throw new AppError(
+          "User not found or inactive",
+          404,
+          ErrorCodes.USER_NOT_FOUND
+        );
       }
 
       return { userId: decoded.userId, email: decoded.email };
@@ -684,11 +774,15 @@ export class AuthService {
         throw new AppError(
           "Reset token has expired",
           400,
-          ErrorCodes.EXPIRED_TOKEN
+          ErrorCodes.TOKEN_EXPIRED
         );
       }
       if (error instanceof jwt.JsonWebTokenError) {
-        throw new AppError("Invalid reset token", 400, ErrorCodes.INVALID_TOKEN);
+        throw new AppError(
+          "Invalid reset token",
+          400,
+          ErrorCodes.TOKEN_INVALID
+        );
       }
       throw error;
     }
@@ -721,7 +815,6 @@ export class AuthService {
         .update(userSessions)
         .set({
           isActive: false,
-          updatedAt: new Date(),
         })
         .where(eq(userSessions.userId, userId));
 

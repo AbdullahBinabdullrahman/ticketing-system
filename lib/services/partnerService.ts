@@ -310,7 +310,7 @@ export class PartnerService {
 
       // Apply filters
       if (filters.status) {
-        whereConditions.push(sql`${partners.status} = ${filters.status}::partner_status_enum`);
+        whereConditions.push(eq(partners.status, filters.status));
       }
       if (filters.search) {
         whereConditions.push(like(partners.name, `%${filters.search}%`));
@@ -443,6 +443,60 @@ export class PartnerService {
       const completedCountMap = new Map(completedCounts.map(c => [c.partnerId, Number(c.count)]));
       const ratingMap = new Map(ratings.map(r => [r.partnerId, Number(r.avgRating) || 0]));
 
+      // Fetch branches if requested
+      let branchesMap: Map<number, BranchWithDetails[]> | undefined;
+      if (filters.includeBranches) {
+        const allBranches = await db
+          .select({
+            id: branches.id,
+            partnerId: branches.partnerId,
+            name: branches.name,
+            lat: branches.lat,
+            lng: branches.lng,
+            contactName: branches.contactName,
+            phone: branches.phone,
+            address: branches.address,
+            radiusKm: branches.radiusKm,
+            createdAt: branches.createdAt,
+            updatedAt: branches.updatedAt,
+          })
+          .from(branches)
+          .where(
+            and(
+              inArray(branches.partnerId, partnerIds),
+              eq(branches.isActive, true),
+              eq(branches.isDeleted, false)
+            )
+          )
+          .orderBy(asc(branches.name));
+
+        // Group branches by partnerId
+        branchesMap = new Map();
+        for (const branch of allBranches) {
+          const branchDetail: BranchWithDetails = {
+            id: branch.id,
+            partnerId: branch.partnerId,
+            partnerName: partnersResult.find(p => p.id === branch.partnerId)?.name || "",
+            name: branch.name,
+            lat: parseFloat(branch.lat || "0"),
+            lng: parseFloat(branch.lng || "0"),
+            contactName: branch.contactName || undefined,
+            phone: branch.phone || undefined,
+            address: branch.address || undefined,
+            radiusKm: parseFloat(branch.radiusKm || "10"),
+            createdAt: branch.createdAt!,
+            updatedAt: branch.updatedAt!,
+            usersCount: 0, // Not calculated in bulk fetch
+            requestsCount: 0, // Not calculated in bulk fetch
+          };
+
+          if (!branchesMap.has(branch.partnerId)) {
+            branchesMap.set(branch.partnerId, []);
+          }
+          branchesMap.get(branch.partnerId)!.push(branchDetail);
+        }
+      }
+
       // Map partners to details using the lookup maps
       const partnersWithDetails: PartnerWithDetails[] = partnersResult.map(partner => ({
         id: partner.id,
@@ -458,6 +512,7 @@ export class PartnerService {
         requestsCount: requestCountMap.get(partner.id) || 0,
         completedRequestsCount: completedCountMap.get(partner.id) || 0,
         averageRating: ratingMap.get(partner.id) || 0,
+        branches: branchesMap ? branchesMap.get(partner.id) : undefined,
       }));
 
       logger.info("Partners retrieved successfully", {

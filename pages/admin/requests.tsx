@@ -42,13 +42,15 @@ import { CardSkeleton, StatsCardSkeleton } from "../../components/ui/skeleton";
 export default function AdminRequestsPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
-  
+
   // Modal states
-  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(
+    null
+  );
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<RequestFiltersInput>({
@@ -59,7 +61,8 @@ export default function AdminRequestsPage() {
   });
 
   // Fetch requests with filters
-  const { requests, pagination, isLoading, mutate, isError } = useRequests(filters);
+  const { requests, pagination, isLoading, mutate, isError } =
+    useRequests(filters);
 
   // Calculate statistics
   const stats = {
@@ -79,12 +82,36 @@ export default function AdminRequestsPage() {
   // Status options for filter dropdown
   const statusOptions = [
     { value: "", label: t("filters.allStatuses"), color: "bg-gray-500" },
-    { value: "submitted", label: t("requests.submitted"), color: "bg-blue-500" },
-    { value: "unassigned", label: t("requests.unassigned"), color: "bg-orange-500" },
-    { value: "assigned", label: t("requests.assigned"), color: "bg-yellow-500" },
-    { value: "confirmed", label: t("requests.confirmed"), color: "bg-purple-500" },
-    { value: "in_progress", label: t("requests.inProgress"), color: "bg-indigo-500" },
-    { value: "completed", label: t("requests.completed"), color: "bg-green-500" },
+    {
+      value: "submitted",
+      label: t("requests.submitted"),
+      color: "bg-blue-500",
+    },
+    {
+      value: "unassigned",
+      label: t("requests.unassigned"),
+      color: "bg-orange-500",
+    },
+    {
+      value: "assigned",
+      label: t("requests.assigned"),
+      color: "bg-yellow-500",
+    },
+    {
+      value: "confirmed",
+      label: t("requests.confirmed"),
+      color: "bg-purple-500",
+    },
+    {
+      value: "in_progress",
+      label: t("requests.inProgress"),
+      color: "bg-indigo-500",
+    },
+    {
+      value: "completed",
+      label: t("requests.completed"),
+      color: "bg-green-500",
+    },
     { value: "closed", label: t("requests.closed"), color: "bg-gray-500" },
     { value: "rejected", label: t("requests.rejected"), color: "bg-red-500" },
   ];
@@ -102,11 +129,14 @@ export default function AdminRequestsPage() {
    * Handle status filter change
    */
   const handleStatusFilter = (status: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      status: status || undefined,
-      page: 1,
-    } as RequestFiltersInput));
+    setFilters(
+      (prev) =>
+        ({
+          ...prev,
+          status: status || undefined,
+          page: 1,
+        } as RequestFiltersInput)
+    );
   };
 
   /**
@@ -179,7 +209,15 @@ export default function AdminRequestsPage() {
    * Generate CSV from requests
    */
   const generateCSV = (data: any[]) => {
-    const headers = ["ID", "Customer", "Phone", "Address", "Status", "Created", "Updated"];
+    const headers = [
+      "ID",
+      "Customer",
+      "Phone",
+      "Address",
+      "Status",
+      "Created",
+      "Updated",
+    ];
     const rows = data.map((req) => [
       req.requestNumber,
       req.customerName,
@@ -189,7 +227,7 @@ export default function AdminRequestsPage() {
       new Date(req.createdAt).toLocaleString(),
       new Date(req.updatedAt).toLocaleString(),
     ]);
-    
+
     return [headers, ...rows].map((row) => row.join(",")).join("\n");
   };
 
@@ -241,9 +279,7 @@ export default function AdminRequestsPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {t("navigation.requests")}
               </h1>
-              <p className="text-gray-600">
-                {t("requests.manageDescription")}
-              </p>
+              <p className="text-gray-600">{t("requests.manageDescription")}</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -370,7 +406,11 @@ export default function AdminRequestsPage() {
                 <button
                   onClick={handleSortOrderToggle}
                   className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  title={filters.sortOrder === "desc" ? t("filters.descending") : t("filters.ascending")}
+                  title={
+                    filters.sortOrder === "desc"
+                      ? t("filters.descending")
+                      : t("filters.ascending")
+                  }
                 >
                   <TrendingUp
                     className={`w-5 h-5 text-gray-600 transition-transform ${
@@ -438,9 +478,7 @@ export default function AdminRequestsPage() {
               <h3 className="text-xl font-bold text-red-900 mb-2">
                 {t("error.loadingFailed")}
               </h3>
-              <p className="text-red-700 mb-6">
-                {t("error.tryAgain")}
-              </p>
+              <p className="text-red-700 mb-6">{t("error.tryAgain")}</p>
               <button
                 onClick={() => mutate()}
                 className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium inline-flex items-center gap-2"
@@ -459,7 +497,9 @@ export default function AdminRequestsPage() {
               </h3>
               <p className="text-gray-600 mb-6">
                 {filters.status
-                  ? t("requests.noRequestsWithStatus", { status: filters.status })
+                  ? t("requests.noRequestsWithStatus", {
+                      status: filters.status,
+                    })
                   : searchQuery
                   ? t("requests.noRequestsMatchingSearch")
                   : t("requests.createFirstRequest")}
@@ -478,7 +518,7 @@ export default function AdminRequestsPage() {
           <div className="space-y-4">
             {filteredRequests.map((request, index) => (
               <BlurFade key={request.id} delay={0.05 * (index % 10)}>
-                <div className="relative group">
+                <div className="group">
                   <RequestCard
                     requestNumber={request.requestNumber}
                     customerName={request.customerName}
@@ -489,25 +529,36 @@ export default function AdminRequestsPage() {
                     onClick={() => handleRequestClick(request.id)}
                     className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
                   />
-                  
-                  {/* Quick Assign Button for Unassigned Requests */}
-                  {(request.status === "submitted" || request.status === "unassigned") && (
-                    <button
-                      onClick={(e) => handleQuickAssign(e, request.id)}
-                      className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg font-semibold text-sm z-10 hover:scale-105 transform"
-                    >
-                      <Zap className="w-4 h-4" />
-                      {t("quickAssign")}
-                    </button>
-                  )}
 
-                  {/* Location indicator */}
-                  {request.customerLat && request.customerLng && (
-                    <div className="absolute bottom-4 right-4 flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                      <MapPin className="w-3 h-3" />
-                      {t("common.viewLocation")}
-                    </div>
-                  )}
+                  {/* Action Bar Below Card */}
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    {/* Location indicator */}
+                    {request.customerLat && request.customerLng && (
+                      <div className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium border border-blue-200 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MapPin className="w-3.5 h-3.5" />
+                        {t("common.viewLocation")}
+                      </div>
+                    )}
+
+                    {/* Spacer when no location */}
+                    {!request.customerLat && !request.customerLng && (
+                      <div className="flex-1" />
+                    )}
+
+                    {/* Quick Assign Button - Available for all statuses except completed/closed */}
+                    {!["completed", "closed"].includes(request.status) && (
+                      <button
+                        onClick={(e) => handleQuickAssign(e, request.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md font-semibold text-sm hover:scale-105 transform hover:shadow-lg"
+                      >
+                        <Zap className="w-4 h-4" />
+                        {request.status === "submitted" ||
+                        request.status === "unassigned"
+                          ? t("quickAssign")
+                          : t("reassign")}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </BlurFade>
             ))}
@@ -551,30 +602,33 @@ export default function AdminRequestsPage() {
                 >
                   {t("pagination.previous")}
                 </button>
-                
+
                 {/* Page numbers */}
                 <div className="hidden sm:flex items-center gap-2">
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    const pageNum = i + 1;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() =>
-                          setFilters((prev) => ({
-                            ...prev,
-                            page: pageNum,
-                          }))
-                        }
-                        className={`w-10 h-10 rounded-lg font-semibold transition-all ${
-                          filters.page === pageNum
-                            ? "bg-blue-600 text-white shadow-md"
-                            : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+                  {Array.from(
+                    { length: Math.min(5, pagination.totalPages) },
+                    (_, i) => {
+                      const pageNum = i + 1;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              page: pageNum,
+                            }))
+                          }
+                          className={`w-10 h-10 rounded-lg font-semibold transition-all ${
+                            filters.page === pageNum
+                              ? "bg-blue-600 text-white shadow-md"
+                              : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    }
+                  )}
                 </div>
 
                 <button
@@ -620,7 +674,7 @@ export default function AdminRequestsPage() {
             }}
             onAssignSuccess={handleAssignSuccess}
           />
-          
+
           <RequestDetailsModal
             requestId={selectedRequestId}
             isOpen={showDetailsModal}

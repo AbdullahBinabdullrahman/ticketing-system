@@ -22,6 +22,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   updateProfile: (data: Record<string, unknown>) => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -263,6 +264,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      if (!tokens) throw new Error("User not authenticated");
+
+      const response = await http.get(`/auth/me`);
+      setUser(response.data.user);
+
+      logger.info("User data refreshed successfully");
+    } catch (error) {
+      logger.error("Refresh user failed", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      throw error;
+    }
+  };
+
   const updateProfile = async (data: Record<string, unknown>) => {
     try {
       if (!user) throw new Error("User not authenticated");
@@ -291,6 +308,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     refreshToken,
+    refreshUser,
     updateProfile,
     isAuthenticated,
     isAdmin,
