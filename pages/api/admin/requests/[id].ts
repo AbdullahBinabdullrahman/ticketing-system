@@ -36,7 +36,7 @@ export default async function handler(
       });
     }
 
-    const requestId = parseInt(req.query.id as string);
+    const requestNumber = req.query.id as string;
 
     logger.apiRequest(
       req.method!,
@@ -47,7 +47,8 @@ export default async function handler(
 
     if (req.method === "GET") {
       // Get request details
-      const request = await requestService.getRequestWithDetails(requestId);
+
+      const request = await requestService.getRequestWithDetails(requestNumber);
 
       logger.apiResponse(
         req.method!,

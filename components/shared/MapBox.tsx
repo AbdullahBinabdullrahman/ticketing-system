@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Map, {
   Marker,
   NavigationControl,
   type MarkerDragEvent,
-  type MapLayerMouseEvent,
+  type MapMouseEvent,
 } from "react-map-gl/mapbox";
 import { MapPin } from "lucide-react";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -22,13 +22,13 @@ interface MapBoxProps {
   longitude?: number;
   onLocationChange?: (lat: number, lng: number) => void;
   draggableMarker?: boolean;
-  
+
   // New props (multiple markers mode)
   center?: [number, number]; // [lng, lat]
   markers?: MarkerData[];
   onClick?: (lng: number, lat: number) => void;
   height?: string;
-  
+
   // Common props
   className?: string;
   zoom?: number;
@@ -68,7 +68,7 @@ export default function MapBox({
   const mapToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
   // Determine map center
-  const mapCenter = center 
+  const mapCenter = center
     ? { lng: center[0], lat: center[1] }
     : { lng: longitude || 0, lat: latitude || 0 };
 
@@ -78,10 +78,32 @@ export default function MapBox({
     longitude: longitude || 0,
   });
 
+  // Track if user is dragging to avoid overriding during drag
+  const isDraggingRef = useRef(false);
+
+  // Sync marker position with props when they change (from external updates like "Use Current Location" button)
+  useEffect(() => {
+    if (
+      !isDraggingRef.current &&
+      latitude !== undefined &&
+      longitude !== undefined &&
+      (latitude !== markerPosition.latitude ||
+        longitude !== markerPosition.longitude)
+    ) {
+      setMarkerPosition({
+        latitude,
+        longitude,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latitude, longitude]);
+
   const handleMarkerDragEnd = (event: MarkerDragEvent) => {
     const { lngLat } = event;
     const newLat = lngLat.lat;
     const newLng = lngLat.lng;
+
+    isDraggingRef.current = false;
 
     setMarkerPosition({
       latitude: newLat,
@@ -93,9 +115,28 @@ export default function MapBox({
     }
   };
 
-  const handleMapClick = (event: MapLayerMouseEvent) => {
-    if (onClick && event.lngLat) {
-      onClick(event.lngLat.lng, event.lngLat.lat);
+  const handleMarkerDragStart = () => {
+    isDraggingRef.current = true;
+  };
+
+  const handleMapClick = (event: MapMouseEvent) => {
+    if (event.lngLat) {
+      // If onClick prop is provided, use it (multiple markers mode)
+      if (onClick) {
+        onClick(event.lngLat.lng, event.lngLat.lat);
+      }
+      // If onLocationChange is provided, update marker position (single marker mode)
+      else if (onLocationChange) {
+        const newLat = event.lngLat.lat;
+        const newLng = event.lngLat.lng;
+
+        setMarkerPosition({
+          latitude: newLat,
+          longitude: newLng,
+        });
+
+        onLocationChange(newLat, newLng);
+      }
     }
   };
 
@@ -118,10 +159,10 @@ export default function MapBox({
   }
 
   // Check for valid coordinates
-  const hasValidCenter = 
-    !isNaN(mapCenter.lng) && 
-    !isNaN(mapCenter.lat) && 
-    mapCenter.lng !== 0 && 
+  const hasValidCenter =
+    !isNaN(mapCenter.lng) &&
+    !isNaN(mapCenter.lat) &&
+    mapCenter.lng !== 0 &&
     mapCenter.lat !== 0;
 
   if (!hasValidCenter) {
@@ -133,7 +174,8 @@ export default function MapBox({
         <div className="text-center p-8">
           <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-400" />
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Click &quot;Get Current Location&quot; or click on the map to set a location
+            Click &quot;Get Current Location&quot; or click on the map to set a
+            location
           </p>
         </div>
       </div>
@@ -141,7 +183,7 @@ export default function MapBox({
   }
 
   return (
-    <div 
+    <div
       className={`relative overflow-hidden rounded-lg ${className}`}
       style={{ height: height || "100%" }}
     >
@@ -159,32 +201,29 @@ export default function MapBox({
 
         {/* Single marker mode */}
         {!markers && latitude !== undefined && longitude !== undefined && (
-        <Marker
-          latitude={markerPosition.latitude}
-          longitude={markerPosition.longitude}
-          draggable={draggableMarker}
-          onDragEnd={handleMarkerDragEnd}
-        >
-          <div className="relative">
-            <div className="absolute -top-10 -left-4">
-              <MapPin
-                className="h-10 w-10 text-indigo-600 drop-shadow-lg"
-                fill="currentColor"
-                strokeWidth={1}
-              />
+          <Marker
+            latitude={markerPosition.latitude}
+            longitude={markerPosition.longitude}
+            draggable={draggableMarker}
+            onDragStart={handleMarkerDragStart}
+            onDragEnd={handleMarkerDragEnd}
+          >
+            <div className="relative">
+              <div className="absolute -top-10 -left-4">
+                <MapPin
+                  className="h-10 w-10 text-indigo-600 drop-shadow-lg"
+                  fill="currentColor"
+                  strokeWidth={1}
+                />
+              </div>
             </div>
-          </div>
-        </Marker>
+          </Marker>
         )}
 
         {/* Multiple markers mode */}
         {markers &&
           markers.map((marker, index) => (
-            <Marker
-              key={index}
-              latitude={marker.lat}
-              longitude={marker.lng}
-            >
+            <Marker key={index} latitude={marker.lat} longitude={marker.lng}>
               <div className="relative">
                 <div className="absolute -top-10 -left-4">
                   <MapPin
@@ -203,10 +242,10 @@ export default function MapBox({
           ))}
       </Map>
 
-      {draggableMarker && (
+      {(draggableMarker || onLocationChange) && !onClick && (
         <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-lg text-xs pointer-events-none">
           <p className="text-gray-700 dark:text-gray-300 font-medium">
-            Drag the marker to adjust location
+            Click on map or drag marker to set location
           </p>
         </div>
       )}

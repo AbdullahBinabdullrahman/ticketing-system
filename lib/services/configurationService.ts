@@ -1,23 +1,23 @@
 /**
  * Configuration Service
- * 
+ *
  * Manages system-wide configurations stored in the database.
  * Provides methods to get and set global configurations like SLA timeout,
  * notification emails, and other system settings.
  */
 
-import { db } from '../db/connection';
-import { configurations } from '../db/schema';
-import { eq, and, sql } from 'drizzle-orm';
-import { logger } from '../utils/logger';
+import { db } from "../db/connection";
+import { configurations, users, roles } from "../db/schema";
+import { eq, and, sql, or, inArray } from "drizzle-orm";
+import { logger } from "../utils/logger";
 
 /**
  * Configuration keys used in the system
  */
 export const CONFIG_KEYS = {
-  SLA_TIMEOUT_MINUTES: 'sla_timeout_minutes',
-  OPERATIONAL_TEAM_EMAILS: 'operational_team_emails',
-  ADMIN_NOTIFICATION_EMAILS: 'admin_notification_emails',
+  SLA_TIMEOUT_MINUTES: "sla_timeout_minutes",
+  OPERATIONAL_TEAM_EMAILS: "operational_team_emails",
+  ADMIN_NOTIFICATION_EMAILS: "admin_notification_emails",
 } as const;
 
 /**
@@ -68,7 +68,7 @@ export class ConfigurationService {
 
       return config[0];
     } catch (error) {
-      logger.error('Error fetching global config', { key, error });
+      logger.error("Error fetching global config", { key, error });
       throw error;
     }
   }
@@ -121,14 +121,14 @@ export class ConfigurationService {
             updatedAt: configurations.updatedAt,
           });
 
-        logger.info('Configuration updated', { key, userId });
+        logger.info("Configuration updated", { key, userId });
         return updated[0];
       } else {
         // Create new
         const created = await db
           .insert(configurations)
           .values({
-            scope: 'global',
+            scope: "global",
             key,
             value,
             description: description || null,
@@ -145,11 +145,11 @@ export class ConfigurationService {
             updatedAt: configurations.updatedAt,
           });
 
-        logger.info('Configuration created', { key, userId });
+        logger.info("Configuration created", { key, userId });
         return created[0];
       }
     } catch (error) {
-      logger.error('Error setting global config', { key, error });
+      logger.error("Error setting global config", { key, error });
       throw error;
     }
   }
@@ -180,7 +180,7 @@ export class ConfigurationService {
 
       return configs;
     } catch (error) {
-      logger.error('Error fetching all global configs', { error });
+      logger.error("Error fetching all global configs", { error });
       throw error;
     }
   }
@@ -206,9 +206,9 @@ export class ConfigurationService {
           )
         );
 
-      logger.info('Configuration deleted', { key, userId });
+      logger.info("Configuration deleted", { key, userId });
     } catch (error) {
-      logger.error('Error deleting global config', { key, error });
+      logger.error("Error deleting global config", { key, error });
       throw error;
     }
   }
@@ -220,8 +220,10 @@ export class ConfigurationService {
    */
   async getSlaTimeout(): Promise<number> {
     try {
-      const config = await this.getGlobalConfig(CONFIG_KEYS.SLA_TIMEOUT_MINUTES);
-      
+      const config = await this.getGlobalConfig(
+        CONFIG_KEYS.SLA_TIMEOUT_MINUTES
+      );
+
       if (config && config.value) {
         const timeout = parseInt(config.value, 10);
         if (!isNaN(timeout) && timeout > 0 && timeout <= 60) {
@@ -230,10 +232,13 @@ export class ConfigurationService {
       }
 
       // Fallback to environment variable or default
-      const envTimeout = parseInt(process.env.DEFAULT_SLA_TIMEOUT_MINUTES || '15', 10);
+      const envTimeout = parseInt(
+        process.env.DEFAULT_SLA_TIMEOUT_MINUTES || "15",
+        10
+      );
       return !isNaN(envTimeout) ? envTimeout : 15;
     } catch (error) {
-      logger.error('Error getting SLA timeout, using default', { error });
+      logger.error("Error getting SLA timeout, using default", { error });
       return 15; // Fallback to default
     }
   }
@@ -244,57 +249,116 @@ export class ConfigurationService {
    */
   async getOperationalTeamEmails(): Promise<string[]> {
     try {
-      const config = await this.getGlobalConfig(CONFIG_KEYS.OPERATIONAL_TEAM_EMAILS);
-      
+      const config = await this.getGlobalConfig(
+        CONFIG_KEYS.OPERATIONAL_TEAM_EMAILS
+      );
+
       if (config && config.value) {
         // Split by comma and trim whitespace
         return config.value
-          .split(',')
-          .map(email => email.trim())
-          .filter(email => email.length > 0);
+          .split(",")
+          .map((email) => email.trim())
+          .filter((email) => email.length > 0);
       }
 
       // Fallback to environment variable
-      const envEmails = process.env.OPERATIONAL_TEAM_EMAILS || '';
+      const envEmails = process.env.OPERATIONAL_TEAM_EMAILS || "";
       if (envEmails) {
         return envEmails
-          .split(',')
-          .map(email => email.trim())
-          .filter(email => email.length > 0);
+          .split(",")
+          .map((email) => email.trim())
+          .filter((email) => email.length > 0);
       }
 
       return [];
     } catch (error) {
-      logger.error('Error getting operational team emails', { error });
+      logger.error("Error getting operational team emails", { error });
       return [];
     }
   }
 
   /**
-   * Get admin notification email addresses
-   * @returns Array of email addresses
+   * Get all admin and operation user emails from the database
+   * Queries the users table for active users with admin user_type or admin/operation roles
+   * @returns Array of email addresses from database, config, or environment variable (in priority order)
    */
   async getAdminEmails(): Promise<string[]> {
     try {
-      const config = await this.getGlobalConfig(CONFIG_KEYS.ADMIN_NOTIFICATION_EMAILS);
-      
-      if (config && config.value) {
-        // Split by comma and trim whitespace
-        return config.value
-          .split(',')
-          .map(email => email.trim())
-          .filter(email => email.length > 0);
+      // Query database for all admin and operation users
+      const adminUsers = await db
+        .select({
+          email: users.email,
+          name: users.name,
+          roleName: roles.name,
+        })
+        .from(users)
+        .innerJoin(roles, eq(users.roleId, roles.id))
+        .where(
+          and(
+            or(
+              eq(users.userType, "admin"),
+              inArray(roles.name, ["admin", "operation"])
+            ),
+            eq(users.isActive, true),
+            eq(users.isDeleted, false),
+            eq(roles.isActive, true),
+            eq(roles.isDeleted, false)
+          )
+        );
+
+      // Extract unique email addresses
+      const emails = [...new Set(adminUsers.map((user) => user.email))];
+
+      if (emails.length > 0) {
+        logger.info("Retrieved admin emails from database", {
+          count: emails.length,
+          emails: emails.map((email) =>
+            email.replace(/^(.{3}).*(@.*)$/, "$1***$2")
+          ), // Partially mask for security
+        });
+        return emails;
       }
 
-      // Fallback to environment variable
-      const envEmail = process.env.ADMIN_EMAIL || '';
+      // Fallback 1: Try config value
+      const config = await this.getGlobalConfig(
+        CONFIG_KEYS.ADMIN_NOTIFICATION_EMAILS
+      );
+      if (config && config.value) {
+        const configEmails = config.value
+          .split(",")
+          .map((email) => email.trim())
+          .filter((email) => email.length > 0);
+
+        if (configEmails.length > 0) {
+          logger.info("Using admin emails from config", {
+            count: configEmails.length,
+          });
+          return configEmails;
+        }
+      }
+
+      // Fallback 2: Environment variable
+      const envEmail = process.env.ADMIN_EMAIL || "";
       if (envEmail) {
+        logger.info("Using admin email from environment variable");
         return [envEmail];
       }
 
+      logger.warn("No admin emails found in database, config, or environment");
       return [];
     } catch (error) {
-      logger.error('Error getting admin emails', { error });
+      logger.error("Error getting admin emails", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      // Emergency fallback to environment variable
+      const envEmail = process.env.ADMIN_EMAIL || "";
+      if (envEmail) {
+        logger.info("Using emergency fallback to environment variable");
+        return [envEmail];
+      }
+
       return [];
     }
   }
@@ -307,12 +371,12 @@ export class ConfigurationService {
     try {
       const adminEmails = await this.getAdminEmails();
       const operationalEmails = await this.getOperationalTeamEmails();
-      
+
       // Combine and deduplicate
       const allEmails = [...adminEmails, ...operationalEmails];
       return Array.from(new Set(allEmails));
     } catch (error) {
-      logger.error('Error getting SLA notification recipients', { error });
+      logger.error("Error getting SLA notification recipients", { error });
       return [];
     }
   }
@@ -320,4 +384,3 @@ export class ConfigurationService {
 
 // Create and export singleton instance
 export const configurationService = new ConfigurationService();
-

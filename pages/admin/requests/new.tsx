@@ -16,7 +16,7 @@
  * - Responsive design (mobile-first)
  */
 
-import React, { useEffect } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "next/router";
 import AdminLayout from "../../../components/layout/AdminLayout";
@@ -40,7 +40,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useCategories } from "../../../hooks/useCategories";
-import { usePartnerPickupOptions } from "../../../hooks/usePartnerPickupOptions";
+import {
+  usePickupOptions,
+  type PickupOption,
+} from "../../../hooks/usePickupOptions";
 import { useServices } from "../../../hooks/useServices";
 import { adminHttp } from "../../../lib/utils/http";
 
@@ -54,7 +57,7 @@ const createAdminRequestSchema = z.object({
   customerLat: z.number().min(-90).max(90),
   customerLng: z.number().min(-180).max(180),
   categoryId: z.number().min(1, "Please select a category"),
-  serviceId: z.number().optional(),
+  serviceId: z.number().min(1, "Please select a service"),
   pickupOptionId: z.number().min(1, "Please select a pickup option"),
 });
 
@@ -83,29 +86,16 @@ export default function AdminNewRequestPage() {
   });
 
   const selectedCategory = watch("categoryId");
-  const selectedPickupOption = watch("pickupOptionId");
   const customerLat = watch("customerLat");
   const customerLng = watch("customerLng");
 
   const { categories, isLoading: categoriesLoading } = useCategories();
-  const { pickupOptions, isLoading: pickupOptionsLoading } =
-    usePartnerPickupOptions(null);
+  const { pickupOptions, isLoading: pickupOptionsLoading } = usePickupOptions();
+  console.log({ pickupOptions });
 
+  // Get services filtered by selected category
   const { services, isLoading: servicesLoading } =
     useServices(selectedCategory);
-
-  const selectedPickupOptionData = pickupOptions?.find(
-    (opt: { id: number; requiresServiceSelection: boolean }) =>
-      opt.id === selectedPickupOption
-  );
-  const requiresServiceSelection =
-    selectedPickupOptionData?.requiresServiceSelection;
-
-  useEffect(() => {
-    if (selectedCategory && !requiresServiceSelection) {
-      setValue("serviceId", undefined); // Clear service if not required
-    }
-  }, [selectedCategory, requiresServiceSelection, setValue]);
 
   const handleLocationChange = (lat: number, lng: number) => {
     setValue("customerLat", lat);
@@ -269,6 +259,43 @@ export default function AdminNewRequestPage() {
                       )}
                     </div>
 
+                    {/* Service */}
+                    <div>
+                      <label
+                        htmlFor="serviceId"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      >
+                        <Package className="inline h-4 w-4 mr-2" />
+                        {t("requests.selectService")}{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        id="serviceId"
+                        {...register("serviceId", { valueAsNumber: true })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-900 dark:border-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!selectedCategory || servicesLoading}
+                      >
+                        <option value="">{t("requests.selectService")}</option>
+                        {servicesLoading ? (
+                          <option disabled>{t("common.loading")}</option>
+                        ) : (
+                          services?.map((service) => (
+                            <option key={service.id} value={service.id}>
+                              {isRtl
+                                ? service.nameAr || service.name
+                                : service.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                      {errors.serviceId && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.serviceId.message}
+                        </p>
+                      )}
+                    </div>
+
                     {/* Pickup Option */}
                     <div>
                       <label
@@ -287,17 +314,11 @@ export default function AdminNewRequestPage() {
                         <option value="">
                           {t("requests.selectPickupOption")}
                         </option>
-                        {pickupOptions?.map(
-                          (option: {
-                            id: number;
-                            name: string;
-                            nameAr: string;
-                          }) => (
-                            <option key={option.id} value={option.id}>
-                              {isRtl ? option.nameAr : option.name}
-                            </option>
-                          )
-                        )}
+                        {pickupOptions?.map((option: PickupOption) => (
+                          <option key={option.id} value={option.id}>
+                            {isRtl ? option.nameAr || option.name : option.name}
+                          </option>
+                        ))}
                       </select>
                       {errors.pickupOptionId && (
                         <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -306,42 +327,6 @@ export default function AdminNewRequestPage() {
                         </p>
                       )}
                     </div>
-
-                    {/* Service (conditional) */}
-                    {requiresServiceSelection && (
-                      <div>
-                        <label
-                          htmlFor="serviceId"
-                          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                        >
-                          <Package className="inline h-4 w-4 mr-2" />
-                          {t("requests.selectService")}
-                        </label>
-                        <select
-                          id="serviceId"
-                          {...register("serviceId", { valueAsNumber: true })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-900 dark:border-gray-700 dark:text-white"
-                          disabled={!selectedCategory || servicesLoading}
-                        >
-                          <option value="">
-                            {t("requests.selectService")}
-                          </option>
-                          {services?.map((service) => (
-                            <option key={service.id} value={service.id}>
-                              {isRtl
-                                ? service.nameAr || service.name
-                                : service.name}
-                            </option>
-                          ))}
-                        </select>
-                        {errors.serviceId && (
-                          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {errors.serviceId.message}
-                          </p>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
 
