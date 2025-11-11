@@ -113,10 +113,16 @@ class Logger {
   }
 
   // Specialized logging methods
-  apiRequest(method: string, url: string, userId?: number, requestId?: string) {
+  apiRequest(
+    method: string,
+    url: string,
+    body?: Record<string, unknown> | null,
+    userId?: number | undefined,
+    requestId?: string | undefined
+  ) {
     this.info(
       `API Request: ${method} ${url}`,
-      { method, url },
+      { method, url, ...body },
       userId,
       requestId
     );

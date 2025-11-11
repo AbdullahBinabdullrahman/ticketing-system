@@ -41,7 +41,7 @@ interface RainbowButtonProps
 }
 
 const RainbowButton = React.forwardRef<HTMLButtonElement, RainbowButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, ...props }, ref) => {
     const Comp = "button";
     return (
       <Comp

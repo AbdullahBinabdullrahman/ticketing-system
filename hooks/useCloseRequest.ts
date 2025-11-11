@@ -31,9 +31,14 @@ export function useCloseRequest() {
       );
 
       return response.data.request;
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err.response?.data?.message || "Failed to close request";
+        err && typeof err === 'object' && 'response' in err &&
+        err.response && typeof err.response === 'object' && 'data' in err.response &&
+        err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data &&
+        typeof err.response.data.message === 'string'
+          ? err.response.data.message
+          : "Failed to close request";
       setError(new Error(errorMessage));
       throw err;
     } finally {

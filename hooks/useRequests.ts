@@ -82,7 +82,7 @@ export async function useUpdateRequestStatus() {
     rejectionReason?: string
   ) => {
     return requestsApi.updateRequestStatus(requestId, {
-      status: status as any,
+      status: status as "submitted" | "unassigned" | "assigned" | "confirmed" | "in_progress" | "completed" | "closed" | "rejected",
       notes,
       rejectionReason,
     });

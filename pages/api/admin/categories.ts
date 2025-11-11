@@ -51,6 +51,7 @@ export default async function handler(
     logger.apiRequest(
       req.method!,
       req.url!,
+      null,
       userId,
       req.headers["x-request-id"] as string
     );
@@ -138,4 +139,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

@@ -94,13 +94,24 @@ export default function PartnerResetPasswordPage() {
       setTimeout(() => {
         router.push("/login");
       }, 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Reset password error:", error);
-      if (error.response?.data?.error?.message) {
-        toast.error(error.response.data.error.message);
-      } else {
-        toast.error(t("errors.generic"));
-      }
+      const errorMessage =
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response &&
+        error.response.data &&
+        typeof error.response.data === "object" &&
+        "error" in error.response.data &&
+        error.response.data.error &&
+        typeof error.response.data.error === "object" &&
+        "message" in error.response.data.error
+          ? String(error.response.data.error.message)
+          : t("errors.generic");
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -345,4 +356,3 @@ export default function PartnerResetPasswordPage() {
     </div>
   );
 }
-

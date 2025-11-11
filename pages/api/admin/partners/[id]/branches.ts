@@ -57,7 +57,8 @@ export default async function handler(
     logger.apiRequest(
       req.method!,
       req.url!,
-      userId,
+      { userId },
+      undefined,
       req.headers["x-request-id"] as string
     );
 
@@ -65,7 +66,10 @@ export default async function handler(
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const search = req.query.search as string;
-    const sortBy = (req.query.sortBy as string) || "name";
+    const sortByParam = (req.query.sortBy as string) || "name";
+    const sortBy = ["name", "createdAt", "distance"].includes(sortByParam)
+      ? (sortByParam as "name" | "createdAt" | "distance")
+      : "name";
     const sortOrder = (req.query.sortOrder as "asc" | "desc") || "asc";
 
     // Get branches for partner
@@ -76,6 +80,7 @@ export default async function handler(
       search,
       sortBy,
       sortOrder,
+      radiusKm: 10, // Default radius for listing
     });
 
     logger.apiResponse(
@@ -98,4 +103,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

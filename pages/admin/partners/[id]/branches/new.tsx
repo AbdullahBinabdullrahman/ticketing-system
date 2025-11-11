@@ -271,10 +271,7 @@ export default function NewBranchPage() {
 
           {/* Form Card */}
           <BlurFade delay={0.2}>
-            <MagicCard
-              className="p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700"
-              gradientColor="#d1d5db"
-            >
+            <MagicCard className="p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Branch Name */}
                 <div>

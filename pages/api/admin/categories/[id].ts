@@ -68,7 +68,8 @@ export default async function handler(
     logger.apiRequest(
       req.method!,
       req.url!,
-      userId,
+      { userId },
+      undefined,
       req.headers["x-request-id"] as string
     );
 
@@ -190,4 +191,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

@@ -14,7 +14,7 @@ interface Column<T> {
   key: string;
   label: string;
   sortable?: boolean;
-  render?: (value: any, row: T, index: number) => React.ReactNode;
+  render?: (value: unknown, row: T, index: number) => React.ReactNode;
   className?: string;
 }
 
@@ -40,7 +40,7 @@ interface DataTableProps<T> {
  * DataTable Component
  * Reusable table with sorting, pagination, and custom rendering
  */
-export default function DataTable<T extends Record<string, any>>({
+export default function DataTable<T extends Record<string, unknown>>({
   columns,
   data,
   keyField = "id",

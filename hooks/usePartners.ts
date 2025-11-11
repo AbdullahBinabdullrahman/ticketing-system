@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import type { PaginatedPartnersResponse, PartnerResponse, BranchResponse, NearestBranchResponse } from "../lib/api/partners";
+import type { PaginatedPartnersResponse, PartnerResponse, BranchResponse } from "../lib/api/partners";
 import type { PartnerFiltersInput, BranchFiltersInput } from "../schemas/partners";
 import { partnersApi } from "../lib/api/partners";
 import { apiClient } from "../lib/api/client";
@@ -67,7 +67,10 @@ export function useBranches(filters?: BranchFiltersInput) {
     });
   }
   
-  const { data, error, mutate, isLoading } = useSWR<{ branches: BranchResponse[], pagination: any }>(
+  const { data, error, mutate, isLoading } = useSWR<{ 
+    branches: BranchResponse[], 
+    pagination: { currentPage: number; totalPages: number; total: number; pageSize: number } 
+  }>(
     `/admin/branches?${queryParams.toString()}`,
     fetcher
   );

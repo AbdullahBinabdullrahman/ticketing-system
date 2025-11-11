@@ -126,3 +126,5 @@ ALTER TABLE user_sessions DROP COLUMN session_id;
 
 Then revert the code changes.
 
+
+

@@ -1,6 +1,5 @@
 import { apiClient } from "./client";
 import type {
-  CreatePartnerInput,
   CreatePartnerWithUserInput,
   UpdatePartnerInput,
   PartnerFiltersInput,
@@ -135,7 +134,7 @@ export async function findNearestBranch(
   categoryId?: number,
   partnerId?: number
 ): Promise<NearestBranchResponse | null> {
-  const params: Record<string, any> = { lat, lng };
+  const params: Record<string, string | number> = { lat, lng };
   if (categoryId) params.categoryId = categoryId;
   if (partnerId) params.partnerId = partnerId;
 

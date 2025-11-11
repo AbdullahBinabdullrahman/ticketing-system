@@ -2,7 +2,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { authService } from "../../../lib/services/authService";
 import { updateProfileSchema } from "../../../schemas/auth";
 import { logger } from "../../../lib/utils/logger";
-import { errorHandler } from "../../../lib/utils/errorHandler";
+import {
+  handleApiError,
+  sendErrorResponse,
+} from "../../../lib/utils/errorHandler";
 
 export default async function handler(
   req: NextApiRequest,
@@ -38,6 +41,12 @@ export default async function handler(
       user,
     });
   } catch (error) {
-    return errorHandler(error, req, res);
+    const apiError = handleApiError(error);
+    logger.error("Profile update failed", {
+      error: apiError.message,
+      code: apiError.code,
+      requestId: req.headers["x-request-id"] as string,
+    });
+    return sendErrorResponse(res, apiError);
   }
 }

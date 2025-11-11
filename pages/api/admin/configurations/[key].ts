@@ -102,7 +102,7 @@ export default async function handler(
       // Validate update data
       let validatedData;
       const basicValidation = updateConfigurationSchema.safeParse(req.body);
-      
+
       if (!basicValidation.success) {
         return sendErrorResponse(res, {
           message: "Validation error",
@@ -114,8 +114,8 @@ export default async function handler(
 
       // Apply specific validation based on key
       const dataWithKey = { ...req.body, key };
-      
-      if (key === 'sla_timeout_minutes') {
+
+      if (key === "sla_timeout_minutes") {
         const result = slaTimeoutConfigSchema.safeParse(dataWithKey);
         if (!result.success) {
           return sendErrorResponse(res, {
@@ -126,7 +126,10 @@ export default async function handler(
           });
         }
         validatedData = result.data;
-      } else if (key === 'operational_team_emails' || key === 'admin_notification_emails') {
+      } else if (
+        key === "operational_team_emails" ||
+        key === "admin_notification_emails"
+      ) {
         const result = emailConfigSchema.safeParse(dataWithKey);
         if (!result.success) {
           return sendErrorResponse(res, {
@@ -186,4 +189,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

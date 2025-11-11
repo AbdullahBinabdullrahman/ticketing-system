@@ -20,16 +20,15 @@ import {
   sendErrorResponse,
 } from "../../../../lib/utils/errorHandler";
 import { logger } from "../../../../lib/utils/logger";
-import { z } from "zod";
 
-const updateUserSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters").optional(),
-  email: z.string().email("Invalid email address").optional(),
-  phone: z.string().optional().nullable(),
-  roleId: z.number().int().positive("Invalid role ID").optional(),
-  isActive: z.boolean().optional(),
-  languagePreference: z.enum(["en", "ar"]).optional(),
-});
+// const updateUserSchema = z.object({
+//   name: z.string().min(2, "Name must be at least 2 characters").optional(),
+//   email: z.string().email("Invalid email address").optional(),
+//   phone: z.string().optional().nullable(),
+//   roleId: z.number().int().positive("Invalid role ID").optional(),
+//   isActive: z.boolean().optional(),
+//   languagePreference: z.enum(["en", "ar"]).optional(),
+// });
 
 /**
  * Single User API Handler
@@ -76,6 +75,7 @@ export default async function handler(
     logger.apiRequest(
       req.method!,
       req.url!,
+      null,
       currentUserId,
       req.headers["x-request-id"] as string
     );
@@ -125,7 +125,7 @@ export default async function handler(
 
     // Handle PUT request - Update user
     if (req.method === "PUT") {
-      const validatedData = updateUserSchema.parse(req.body);
+      const validatedData = req.body;
 
       const result = await updateAdminUser(userId, validatedData);
 
@@ -181,7 +181,11 @@ export default async function handler(
         req.headers["x-request-id"] as string
       );
 
-      return sendSuccessResponse(res, { message: "User deleted successfully" }, 200);
+      return sendSuccessResponse(
+        res,
+        { message: "User deleted successfully" },
+        200
+      );
     }
 
     return res.status(405).json({ message: "Method not allowed" });

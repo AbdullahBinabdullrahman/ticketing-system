@@ -40,7 +40,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useCategories } from "../../../hooks/useCategories";
-import { usePickupOptions } from "../../../hooks/usePickupOptions";
+import { usePartnerPickupOptions } from "../../../hooks/usePartnerPickupOptions";
 import { useServices } from "../../../hooks/useServices";
 import { adminHttp } from "../../../lib/utils/http";
 
@@ -88,7 +88,8 @@ export default function AdminNewRequestPage() {
   const customerLng = watch("customerLng");
 
   const { categories, isLoading: categoriesLoading } = useCategories();
-  const { pickupOptions, isLoading: pickupOptionsLoading } = usePickupOptions();
+  const { pickupOptions, isLoading: pickupOptionsLoading } =
+    usePartnerPickupOptions(null);
 
   const { services, isLoading: servicesLoading } =
     useServices(selectedCategory);
@@ -158,16 +159,14 @@ export default function AdminNewRequestPage() {
                 <p>
                   {t("requests.requestNumber")}:{" "}
                   <strong className="text-indigo-600 dark:text-indigo-400">
-                    {response.data.data.request.requestNumber}
+                    {response.data.request.requestNumber}
                   </strong>
                 </p>
               </div>
               <div className="mt-4">
                 <button
                   onClick={() =>
-                    router.push(
-                      `/admin/requests/${response.data.data.request.id}`
-                    )
+                    router.push(`/admin/requests/${response.data.request.id}`)
                   }
                   className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
                 >
@@ -180,7 +179,7 @@ export default function AdminNewRequestPage() {
         { duration: 8000 }
       );
 
-      router.push(`/admin/requests/${response.data.data.request.id}`);
+      router.push(`/admin/requests/${response.data.request.id}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error

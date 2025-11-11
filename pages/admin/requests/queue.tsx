@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
-import { CardSkeleton } from "@/components/ui/skeleton";
 import RequestStatusBadge from "@/components/shared/RequestStatusBadge";
 import AssignRequestModal from "@/components/modals/AssignRequestModal";
 import { formatDistanceToNow } from "date-fns";
@@ -195,10 +194,8 @@ export default function AssignmentQueuePage() {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <CardSkeleton key={i} />
-            ))}
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
           </div>
         )}
 

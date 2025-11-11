@@ -14,3 +14,5 @@ FROM roles
 WHERE name IN ('admin', 'operational', 'partner', 'customer')
 ORDER BY name;
 
+
+

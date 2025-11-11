@@ -10,7 +10,6 @@ import { db } from '../db/connection';
 import { configurations } from '../db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { logger } from '../utils/logger';
-import { AppError, ErrorCodes } from '../utils/errorHandler';
 
 /**
  * Configuration keys used in the system

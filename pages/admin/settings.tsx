@@ -56,9 +56,13 @@ export default function AdminSettingsPage() {
   // Initialize form with current values
   useEffect(() => {
     if (!isLoading) {
-      setSlaTimeout(currentSlaTimeout.toString());
-      setOperationalEmails(currentOperationalEmails);
-      setAdminEmails(currentAdminEmails);
+      setSlaTimeout((prev) =>
+        prev === "" ? currentSlaTimeout.toString() : prev
+      );
+      setOperationalEmails((prev) =>
+        prev === "" ? currentOperationalEmails : prev
+      );
+      setAdminEmails((prev) => (prev === "" ? currentAdminEmails : prev));
     }
   }, [
     currentSlaTimeout,
@@ -67,21 +71,15 @@ export default function AdminSettingsPage() {
     isLoading,
   ]);
 
-  // Track changes
+  // Track changes - calculate without triggering setState during render
+  const hasChangesValue =
+    slaTimeout !== currentSlaTimeout.toString() ||
+    operationalEmails !== currentOperationalEmails ||
+    adminEmails !== currentAdminEmails;
+
   useEffect(() => {
-    const changed =
-      slaTimeout !== currentSlaTimeout.toString() ||
-      operationalEmails !== currentOperationalEmails ||
-      adminEmails !== currentAdminEmails;
-    setHasChanges(changed);
-  }, [
-    slaTimeout,
-    operationalEmails,
-    adminEmails,
-    currentSlaTimeout,
-    currentOperationalEmails,
-    currentAdminEmails,
-  ]);
+    setHasChanges(hasChangesValue);
+  }, [hasChangesValue]);
 
   /**
    * Validate email format
@@ -161,7 +159,9 @@ export default function AdminSettingsPage() {
       }
 
       if (updates.length === 0) {
-        toast.info(t("settings.noChanges"));
+        toast(t("settings.noChanges"), {
+          icon: <Info className="h-5 w-5 text-blue-500" />,
+        });
         return;
       }
 
@@ -171,9 +171,11 @@ export default function AdminSettingsPage() {
         icon: <CheckCircle2 className="h-5 w-5 text-green-500" />,
       });
       setHasChanges(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : t("settings.saveError");
       console.error("Failed to save settings:", error);
-      toast.error(error.message || t("settings.saveError"), {
+      toast.error(errorMessage, {
         icon: <AlertCircle className="h-5 w-5 text-red-500" />,
       });
     }
@@ -188,7 +190,9 @@ export default function AdminSettingsPage() {
     setAdminEmails(currentAdminEmails);
     setErrors({});
     setHasChanges(false);
-    toast.info(t("settings.resetSuccess"));
+    toast(t("settings.resetSuccess"), {
+      icon: <Info className="h-5 w-5 text-blue-500" />,
+    });
   };
 
   if (isLoading) {

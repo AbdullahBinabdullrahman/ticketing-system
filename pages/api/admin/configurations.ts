@@ -77,7 +77,7 @@ export default async function handler(
     } else if (req.method === "POST") {
       // Validate based on configuration key
       let validatedData;
-      
+
       // First, do basic validation
       const basicValidation = createConfigurationSchema.safeParse(req.body);
       if (!basicValidation.success) {
@@ -91,8 +91,8 @@ export default async function handler(
 
       // Then apply specific validation based on key
       const { key } = basicValidation.data;
-      
-      if (key === 'sla_timeout_minutes') {
+
+      if (key === "sla_timeout_minutes") {
         const result = slaTimeoutConfigSchema.safeParse(req.body);
         if (!result.success) {
           return sendErrorResponse(res, {
@@ -103,7 +103,10 @@ export default async function handler(
           });
         }
         validatedData = result.data;
-      } else if (key === 'operational_team_emails' || key === 'admin_notification_emails') {
+      } else if (
+        key === "operational_team_emails" ||
+        key === "admin_notification_emails"
+      ) {
         const result = emailConfigSchema.safeParse(req.body);
         if (!result.success) {
           return sendErrorResponse(res, {
@@ -147,4 +150,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

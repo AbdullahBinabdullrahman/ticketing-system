@@ -123,8 +123,8 @@ export class TestExecutor {
    */
   async executeHappyPathScenario(steps: TestStep[]): Promise<boolean> {
     let requestId: number = 0;
-    let categoryId: number = 1; // Assume first category
-    let pickupOptionId: number = 2; // Pickup and Return
+    const categoryId: number = 1; // Assume first category
+    const pickupOptionId: number = 2; // Pickup and Return
     let partnerId: number = 0;
     let branchId: number = 0;
 
@@ -612,8 +612,8 @@ export class TestExecutor {
    */
   async executeAdminAssignmentScenario(steps: TestStep[]): Promise<boolean> {
     let requestId: number = 0;
-    let categoryId: number = 1;
-    let pickupOptionId: number = 2;
+    const categoryId: number = 1;
+    const pickupOptionId: number = 2;
     let partnerId: number = 0;
     let branchId: number = 0;
 

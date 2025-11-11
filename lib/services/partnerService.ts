@@ -17,10 +17,7 @@ import {
   asc,
   sql,
   count,
-  gte,
-  lte,
   like,
-  or,
   inArray,
 } from "drizzle-orm";
 import { AppError, ErrorCodes } from "../utils/errorHandler";

@@ -22,7 +22,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "GET" && req.method !== "POST" && req.method !== "DELETE") {
+  if (
+    req.method !== "GET" &&
+    req.method !== "POST" &&
+    req.method !== "DELETE"
+  ) {
     return res.status(405).json({ message: "Method not allowed" });
   }
 
@@ -63,7 +67,8 @@ export default async function handler(
     logger.apiRequest(
       req.method!,
       req.url!,
-      userId,
+      { userId },
+      undefined,
       req.headers["x-request-id"] as string
     );
 
@@ -180,4 +185,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

@@ -44,7 +44,7 @@ export default function PartnerProfile() {
       await updateProfile(formData);
       setIsEditing(false);
       toast.success(t("partner.profile.updateSuccess"));
-    } catch (error) {
+    } catch (_error) {
       toast.error(t("errors.generic"));
     }
   };

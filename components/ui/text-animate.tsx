@@ -115,12 +115,9 @@ const TextAnimateBase = ({
   startOnView = true,
   once = false,
   by = "word",
-  animation = "fadeIn",
   accessible = true,
   ...props
 }: TextAnimateProps) => {
-  const MotionComponent = motion.create(Component);
-
   let segments: string[] = [];
   switch (by) {
     case "word":
@@ -165,9 +162,21 @@ const TextAnimateBase = ({
         item: defaultItemVariants,
       };
 
+  // Use motion.p directly instead of motion.create() to avoid React Compiler issues
+  const MotionTag = Component === "p" ? motion.p : 
+                    Component === "h1" ? motion.h1 :
+                    Component === "h2" ? motion.h2 :
+                    Component === "h3" ? motion.h3 :
+                    Component === "h4" ? motion.h4 :
+                    Component === "h5" ? motion.h5 :
+                    Component === "h6" ? motion.h6 :
+                    Component === "span" ? motion.span :
+                    Component === "div" ? motion.div :
+                    motion.p;
+
   return (
     <AnimatePresence mode="popLayout">
-      <MotionComponent
+      <MotionTag
         variants={finalVariants.container as Variants}
         initial="hidden"
         whileInView={startOnView ? "show" : undefined}
@@ -194,7 +203,7 @@ const TextAnimateBase = ({
             {segment}
           </motion.span>
         ))}
-      </MotionComponent>
+      </MotionTag>
     </AnimatePresence>
   );
 };

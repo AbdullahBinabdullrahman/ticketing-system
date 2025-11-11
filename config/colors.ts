@@ -121,17 +121,17 @@ export const cssVariables = {
  */
 export function getColor(path: string): string {
   const parts = path.split(".");
-  let current: any = colors;
+  let current: Record<string, unknown> = colors as Record<string, unknown>;
 
   for (const part of parts) {
     if (current[part] === undefined) {
       console.warn(`Color path "${path}" not found, returning fallback`);
       return "#000000";
     }
-    current = current[part];
+    current = current[part] as Record<string, unknown>;
   }
 
-  return current;
+  return current as string;
 }
 
 /**

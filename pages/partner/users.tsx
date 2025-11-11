@@ -11,11 +11,19 @@ import {
   Trash2,
   Mail,
   Phone,
-  Calendar,
   AlertCircle,
 } from "lucide-react";
 import { BlurFade } from "../../components/ui/blur-fade";
 import toast from "react-hot-toast";
+
+interface PartnerUser {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  roleId: number;
+  createdAt: Date | null;
+}
 
 export default function PartnerUsers() {
   const { t, i18n } = useTranslation("common");
@@ -24,7 +32,7 @@ export default function PartnerUsers() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<PartnerUser | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -39,7 +47,7 @@ export default function PartnerUsers() {
       setIsCreateModalOpen(false);
       setFormData({ name: "", email: "", phone: "", language: "en" });
       toast.success(t("partner.users.userCreated"));
-    } catch (error) {
+    } catch (_error) {
       toast.error(t("errors.generic"));
     }
   };
@@ -55,7 +63,7 @@ export default function PartnerUsers() {
       setIsEditModalOpen(false);
       setSelectedUser(null);
       toast.success(t("partner.users.userUpdated"));
-    } catch (error) {
+    } catch (_error) {
       toast.error(t("errors.generic"));
     }
   };
@@ -67,12 +75,12 @@ export default function PartnerUsers() {
       setIsDeleteModalOpen(false);
       setSelectedUser(null);
       toast.success(t("partner.users.userDeleted"));
-    } catch (error) {
+    } catch (_error) {
       toast.error(t("errors.generic"));
     }
   };
 
-  const openEditModal = (user: any) => {
+  const openEditModal = (user: PartnerUser) => {
     setSelectedUser(user);
     setFormData({
       name: user.name,
@@ -83,7 +91,7 @@ export default function PartnerUsers() {
     setIsEditModalOpen(true);
   };
 
-  const openDeleteModal = (user: any) => {
+  const openDeleteModal = (user: PartnerUser) => {
     setSelectedUser(user);
     setIsDeleteModalOpen(true);
   };

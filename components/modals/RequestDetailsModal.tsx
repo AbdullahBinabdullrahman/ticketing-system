@@ -12,7 +12,6 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Zap,
   MessageSquare,
   Star,
   TrendingUp,
@@ -75,7 +74,7 @@ export default function RequestDetailsModal({
    * Get status icon
    */
   const getStatusIcon = (status: string) => {
-    const icons: Record<string, any> = {
+    const icons: Record<string, React.ElementType> = {
       submitted: FileText,
       unassigned: AlertCircle,
       assigned: Clock,
@@ -147,7 +146,9 @@ export default function RequestDetailsModal({
                 {["details", "timeline", "notes"].map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setActiveTab(tab as any)}
+                    onClick={() =>
+                      setActiveTab(tab as "details" | "timeline" | "notes")
+                    }
                     className={`px-6 py-4 font-semibold transition-all relative ${
                       activeTab === tab
                         ? "text-blue-600"
@@ -312,7 +313,9 @@ export default function RequestDetailsModal({
                                 {t("common.created")}
                               </p>
                               <p className="font-semibold text-gray-900">
-                                {formatDate(request.createdAt)}
+                                {request.createdAt
+                                  ? formatDate(new Date(request.createdAt))
+                                  : t("common.na")}
                               </p>
                             </div>
                           </div>
@@ -325,7 +328,9 @@ export default function RequestDetailsModal({
                                 {t("common.updated")}
                               </p>
                               <p className="font-semibold text-gray-900">
-                                {formatDate(request.updatedAt)}
+                                {request.updatedAt
+                                  ? formatDate(new Date(request.updatedAt))
+                                  : t("common.na")}
                               </p>
                             </div>
                           </div>
@@ -378,7 +383,9 @@ export default function RequestDetailsModal({
                                     {t("common.assigned")}
                                   </p>
                                   <p className="font-semibold text-gray-900">
-                                    {formatDate(request.assignedAt)}
+                                    {request.assignedAt
+                                      ? formatDate(new Date(request.assignedAt))
+                                      : t("common.na")}
                                   </p>
                                 </div>
                               </div>

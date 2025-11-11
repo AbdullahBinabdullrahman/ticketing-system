@@ -22,7 +22,14 @@ export interface CreateAdminUserInput {
 
 export interface CreateAdminUserResult {
   success: boolean;
-  user?: any;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+    roleId: number;
+    userType: string;
+    createdAt: Date | null;
+  };
   temporaryPassword?: string; // Only set if password was auto-generated
   error?: string;
 }

@@ -133,7 +133,7 @@ export default function MapBox({
         <div className="text-center p-8">
           <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-400" />
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Click "Get Current Location" or click on the map to set a location
+            Click &quot;Get Current Location&quot; or click on the map to set a location
           </p>
         </div>
       </div>

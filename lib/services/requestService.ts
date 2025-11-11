@@ -17,7 +17,7 @@ import {
   notificationTypeEnum,
   customers,
 } from "../db/schema";
-import { eq, and, desc, asc, sql, count, gte, lte, or } from "drizzle-orm";
+import { eq, and, desc, asc, sql, count, gte, lte } from "drizzle-orm";
 import { AppError, ErrorCodes } from "../utils/errorHandler";
 import { logger } from "../../lib/utils/logger";
 import notificationService from "./notificationService";
@@ -472,7 +472,7 @@ export class RequestService {
           break;
       }
 
-      const updatedRequest = await db
+      await db
         .update(requests)
         .set(updateData)
         .where(eq(requests.id, requestId))
@@ -623,7 +623,7 @@ export class RequestService {
       }
 
       // Update request with rating
-      const updatedRequest = await db
+      await db
         .update(requests)
         .set({
           rating: data.rating,
@@ -696,7 +696,7 @@ export class RequestService {
       }
 
       // Update request
-      const updatedRequest = await db
+      await db
         .update(requests)
         .set({
           status: "closed",
@@ -1206,9 +1206,7 @@ export class RequestService {
   /**
    * Get request statistics
    */
-  async getRequestStats(
-    filters?: Partial<RequestFiltersInput>
-  ): Promise<RequestStats> {
+  async getRequestStats(): Promise<RequestStats> {
     try {
       // This would implement statistics calculation
       // For now, returning a basic structure

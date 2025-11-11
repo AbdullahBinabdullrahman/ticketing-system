@@ -289,7 +289,7 @@ export async function seedDatabase() {
     console.log("Checking for existing partner branches...");
 
     // Quick Fix branches
-    let existingQFMain = await db
+    const existingQFMain = await db
       .select()
       .from(branches)
       .where(
@@ -315,7 +315,7 @@ export async function seedDatabase() {
       console.log("  ✅ Quick Fix Main Branch already exists");
     }
 
-    let existingQFNorth = await db
+    const existingQFNorth = await db
       .select()
       .from(branches)
       .where(
@@ -341,7 +341,7 @@ export async function seedDatabase() {
       console.log("  ✅ Quick Fix North Branch already exists");
     }
 
-    let existingQFEast = await db
+    const existingQFEast = await db
       .select()
       .from(branches)
       .where(
@@ -368,7 +368,7 @@ export async function seedDatabase() {
     }
 
     // Express Auto branches
-    let existingEADowntown = await db
+    const existingEADowntown = await db
       .select()
       .from(branches)
       .where(
@@ -394,7 +394,7 @@ export async function seedDatabase() {
       console.log("  ✅ Express Auto Downtown Branch already exists");
     }
 
-    let existingEAWest = await db
+    const existingEAWest = await db
       .select()
       .from(branches)
       .where(
@@ -421,7 +421,7 @@ export async function seedDatabase() {
     }
 
     // Pro Tire branches
-    let existingPTMain = await db
+    const existingPTMain = await db
       .select()
       .from(branches)
       .where(
@@ -447,7 +447,7 @@ export async function seedDatabase() {
       console.log("  ✅ Pro Tire Main Service Center already exists");
     }
 
-    let existingPTSouth = await db
+    const existingPTSouth = await db
       .select()
       .from(branches)
       .where(

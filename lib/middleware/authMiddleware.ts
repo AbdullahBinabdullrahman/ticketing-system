@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { authService, type UserProfile } from "../services/authService";
 import { db } from "../db/connection";
-import { roles, rolePermissions, permissions } from "../db/schema";
+import { rolePermissions, permissions } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 import { AppError, ErrorCodes } from "../utils/errorHandler";
 import { logger } from "../utils/logger";
@@ -63,13 +63,13 @@ export async function requireAuth(
  */
 export async function requirePermission(
   req: AuthenticatedRequest,
-  res: NextApiResponse,
+  _res: NextApiResponse,
   permissionName: string
 ): Promise<void> {
   try {
     // First ensure user is authenticated
     if (!req.user || !req.roleId) {
-      await requireAuth(req, res);
+      await requireAuth(req, _res);
     }
 
     const roleId = req.roleId!;

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/router";
 import { useTranslation } from "react-i18next";
 import AdminLayout from "../../components/layout/AdminLayout";
 import RequestCard from "../../components/shared/RequestCard";
@@ -25,7 +24,7 @@ import { useRequests } from "@/hooks/useRequests";
 import { RequestFiltersInput } from "@/schemas/requests";
 import AssignRequestModal from "../../components/modals/AssignRequestModal";
 import RequestDetailsModal from "../../components/modals/RequestDetailsModal";
-import { CardSkeleton, StatsCardSkeleton } from "../../components/ui/skeleton";
+import { CardSkeleton } from "../../components/ui/skeleton";
 
 /**
  * Admin Requests Page
@@ -41,7 +40,6 @@ import { CardSkeleton, StatsCardSkeleton } from "../../components/ui/skeleton";
  */
 export default function AdminRequestsPage() {
   const { t } = useTranslation("common");
-  const router = useRouter();
 
   // Modal states
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(
@@ -49,7 +47,6 @@ export default function AdminRequestsPage() {
   );
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
 
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -145,7 +142,12 @@ export default function AdminRequestsPage() {
   const handleSortChange = (sortBy: string) => {
     setFilters((prev) => ({
       ...prev,
-      sortBy: sortBy as any,
+      sortBy: sortBy as
+        | "createdAt"
+        | "updatedAt"
+        | "submittedAt"
+        | "assignedAt"
+        | "completedAt",
       page: 1,
     }));
   };
@@ -208,7 +210,17 @@ export default function AdminRequestsPage() {
   /**
    * Generate CSV from requests
    */
-  const generateCSV = (data: any[]) => {
+  const generateCSV = (
+    data: Array<{
+      requestNumber: string;
+      customerName: string;
+      customerPhone: string;
+      customerAddress: string;
+      status: string;
+      createdAt: Date | string | null;
+      updatedAt: Date | string | null;
+    }>
+  ) => {
     const headers = [
       "ID",
       "Customer",
@@ -224,8 +236,8 @@ export default function AdminRequestsPage() {
       req.customerPhone,
       req.customerAddress,
       req.status,
-      new Date(req.createdAt).toLocaleString(),
-      new Date(req.updatedAt).toLocaleString(),
+      req.createdAt ? new Date(req.createdAt).toLocaleString() : "N/A",
+      req.updatedAt ? new Date(req.updatedAt).toLocaleString() : "N/A",
     ]);
 
     return [headers, ...rows].map((row) => row.join(",")).join("\n");
@@ -450,7 +462,7 @@ export default function AdminRequestsPage() {
                 )}
                 {searchQuery && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                    Search: "{searchQuery}"
+                    Search: &quot;{searchQuery}&quot;
                     <button
                       onClick={() => setSearchQuery("")}
                       className="hover:bg-green-200 rounded-full p-0.5"

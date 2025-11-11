@@ -92,9 +92,15 @@ export function useUpdateSettings() {
       await mutate(`/admin/configurations/${input.key}`);
       
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error.response?.data?.error?.message || "Failed to update configuration";
+        error && typeof error === 'object' && 'response' in error &&
+        error.response && typeof error.response === 'object' && 'data' in error.response &&
+        error.response.data && typeof error.response.data === 'object' && 'error' in error.response.data &&
+        error.response.data.error && typeof error.response.data.error === 'object' && 'message' in error.response.data.error &&
+        typeof error.response.data.error.message === 'string'
+          ? error.response.data.error.message
+          : "Failed to update configuration";
       setUpdateError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -121,10 +127,15 @@ export function useUpdateSettings() {
       }
       
       return results.map((r) => r.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error.response?.data?.error?.message ||
-        "Failed to update configurations";
+        error && typeof error === 'object' && 'response' in error &&
+        error.response && typeof error.response === 'object' && 'data' in error.response &&
+        error.response.data && typeof error.response.data === 'object' && 'error' in error.response.data &&
+        error.response.data.error && typeof error.response.data.error === 'object' && 'message' in error.response.data.error &&
+        typeof error.response.data.error.message === 'string'
+          ? error.response.data.error.message
+          : "Failed to update configurations";
       setUpdateError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -142,9 +153,15 @@ export function useUpdateSettings() {
       // Revalidate the configurations list
       await mutate("/admin/configurations");
       await mutate(`/admin/configurations/${key}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error.response?.data?.error?.message || "Failed to delete configuration";
+        error && typeof error === 'object' && 'response' in error &&
+        error.response && typeof error.response === 'object' && 'data' in error.response &&
+        error.response.data && typeof error.response.data === 'object' && 'error' in error.response.data &&
+        error.response.data.error && typeof error.response.data.error === 'object' && 'message' in error.response.data.error &&
+        typeof error.response.data.error.message === 'string'
+          ? error.response.data.error.message
+          : "Failed to delete configuration";
       setUpdateError(errorMessage);
       throw new Error(errorMessage);
     } finally {

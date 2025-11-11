@@ -55,7 +55,7 @@ export default async function handler(
     const TEST_CUSTOMER_PASSWORD = "TestCustomer123!";
 
     // Check if test customer already exists
-    let existingCustomer = await db
+    const existingCustomer = await db
       .select()
       .from(users)
       .where(
