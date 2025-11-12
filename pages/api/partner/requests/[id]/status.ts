@@ -32,10 +32,10 @@ export default async function handler(
     const userId = (req as AuthenticatedRequest).userId!;
 
     const idParam = req.query.id as string;
-    
+
     // Support both numeric ID and request number (e.g., REQ-20251106-0011)
     let requestId: number;
-    
+
     if (idParam.startsWith("REQ-")) {
       // It's a request number, fetch the actual ID
       const requestResult = await db
@@ -64,13 +64,6 @@ export default async function handler(
         });
       }
     }
-
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
 
     // Validate request body
     const validatedData = updateRequestStatusSchema.parse(req.body);

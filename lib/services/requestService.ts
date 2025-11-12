@@ -472,11 +472,17 @@ export class RequestService {
           break;
       }
 
+      // Update request status in database (MUST complete before sending emails)
       await db
         .update(requests)
         .set(updateData)
         .where(eq(requests.id, requestId))
         .returning();
+
+      logger.info("Request status updated in database", {
+        requestId,
+        newStatus: data.status,
+      });
 
       // Update assignment record if confirmed or rejected
       if (data.status === "confirmed" || data.status === "rejected") {
@@ -493,12 +499,23 @@ export class RequestService {
               sql`${requestAssignments.response} = 'pending'::assignment_response_enum`
             )
           );
+
+        logger.info("Assignment record updated", {
+          requestId,
+          response: data.status === "confirmed" ? "confirmed" : "rejected",
+        });
       }
 
       // Log status change
       await this.logStatusChange(requestId, data.status, userId, data.notes);
 
-      // Send notifications
+      logger.info("Status change logged in timeline", {
+        requestId,
+        status: data.status,
+      });
+
+      // Send notifications and emails (status change is complete)
+      // NOTE: All database updates are complete - now safe to send notifications
       if (data.status === "confirmed") {
         await this.notifyUser(
           request[0].customerId,

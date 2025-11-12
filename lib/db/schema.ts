@@ -22,6 +22,7 @@ export const userTypeEnum = pgEnum("user_type_enum", [
   "admin",
   "partner",
   "customer",
+  "operation",
 ]);
 export const requestStatusEnum = pgEnum("request_status_enum", [
   "submitted",
