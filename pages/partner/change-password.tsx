@@ -9,7 +9,6 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  CheckCircle2,
   Shield,
   Sparkles,
   ArrowLeft,
@@ -19,7 +18,7 @@ import { MagicCard } from "../../components/ui/magic-card";
 import { BlurFade } from "../../components/ui/blur-fade";
 import { AnimatedGradientText } from "../../components/ui/animated-gradient-text";
 import { BorderBeam } from "../../components/ui/border-beam";
-import { partnerHttp } from "../../lib/api/client";
+import partnerHttp from "../../lib/api/client";
 
 /**
  * Partner Change Password Page
@@ -89,7 +88,7 @@ export default function PartnerChangePasswordPage() {
       });
 
       toast.success(t("auth.passwordChangedSuccess"));
-      
+
       // Clear form
       setFormData({
         currentPassword: "",
@@ -101,13 +100,24 @@ export default function PartnerChangePasswordPage() {
       setTimeout(() => {
         router.push("/partner/dashboard");
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Change password error:", error);
-      if (error.response?.data?.error?.message) {
-        toast.error(error.response.data.error.message);
-      } else {
-        toast.error(t("errors.generic"));
-      }
+      const errorMessage =
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response &&
+        error.response.data &&
+        typeof error.response.data === "object" &&
+        "error" in error.response.data &&
+        error.response.data.error &&
+        typeof error.response.data.error === "object" &&
+        "message" in error.response.data.error
+          ? String(error.response.data.error.message)
+          : t("errors.generic");
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -126,7 +136,7 @@ export default function PartnerChangePasswordPage() {
               {t("common.back")}
             </button>
             <div className="flex items-center gap-3 mb-2">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full  from-indigo-600 to-purple-600">
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <AnimatedGradientText className="text-3xl font-bold">
@@ -173,7 +183,10 @@ export default function PartnerChangePasswordPage() {
                     required
                     value={formData.currentPassword}
                     onChange={(e) =>
-                      setFormData({ ...formData, currentPassword: e.target.value })
+                      setFormData({
+                        ...formData,
+                        currentPassword: e.target.value,
+                      })
                     }
                     onFocus={() => setFocusedField("currentPassword")}
                     onBlur={() => setFocusedField(null)}
@@ -284,7 +297,10 @@ export default function PartnerChangePasswordPage() {
                     required
                     value={formData.confirmPassword}
                     onChange={(e) =>
-                      setFormData({ ...formData, confirmPassword: e.target.value })
+                      setFormData({
+                        ...formData,
+                        confirmPassword: e.target.value,
+                      })
                     }
                     onFocus={() => setFocusedField("confirmPassword")}
                     onBlur={() => setFocusedField(null)}
@@ -295,9 +311,7 @@ export default function PartnerChangePasswordPage() {
                   />
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowConfirmPassword(!showConfirmPassword)
-                    }
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className={`absolute inset-y-0 ${
                       isRtl ? "left-0 pl-3" : "right-0 pr-3"
                     } flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors`}
@@ -320,7 +334,7 @@ export default function PartnerChangePasswordPage() {
                   !formData.newPassword ||
                   !formData.confirmPassword
                 }
-                className="group relative w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="group relative w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent text-base font-semibold rounded-xl text-white  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 {isSubmitting ? (
                   <>
@@ -341,4 +355,3 @@ export default function PartnerChangePasswordPage() {
     </PartnerLayout>
   );
 }
-

@@ -149,7 +149,8 @@ export default function AdminNewRequestPage() {
                 <p>
                   {t("requests.requestNumber")}:{" "}
                   <strong className="text-indigo-600 dark:text-indigo-400">
-                    {response.data.request.requestNumber}
+                    {response.data?.request?.requestNumber ||
+                      response.data?.requestNumber}
                   </strong>
                 </p>
               </div>

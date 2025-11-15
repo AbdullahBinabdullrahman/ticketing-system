@@ -37,18 +37,19 @@ export default async function handler(
     }
 
     const requestNumber = req.query.id as string;
-
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
+    const requestId = parseInt(requestNumber);
+    if (isNaN(requestId)) {
+      return sendErrorResponse(res, {
+        message: "Invalid request ID",
+        code: "VALIDATION_ERROR",
+        statusCode: 400,
+      });
+    }
 
     if (req.method === "GET") {
       // Get request details
 
-      const request = await requestService.getRequestWithDetails(requestNumber);
+      const request = await requestService.getRequestWithDetails(requestId);
 
       logger.apiResponse(
         req.method!,

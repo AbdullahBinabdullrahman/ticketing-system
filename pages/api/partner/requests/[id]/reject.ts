@@ -1,8 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { authService } from "../../../../../lib/services/authService";
 import { db } from "../../../../../lib/db/connection";
-import { requests, requestStatusLog, users, customers, services, categories, branches, partners } from "../../../../../lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import {
+  requests,
+  requestStatusLog,
+  users,
+  customers,
+  services,
+  categories,
+  branches,
+  partners,
+} from "../../../../../lib/db/schema";
+import { eq, and, or } from "drizzle-orm";
 import {
   handleApiError,
   sendSuccessResponse,
@@ -75,7 +84,8 @@ export default async function handler(
     logger.apiRequest(
       req.method!,
       req.url!,
-      userId,
+      { userId },
+      undefined,
       req.headers["x-request-id"] as string
     );
 
@@ -117,28 +127,39 @@ export default async function handler(
       });
     }
 
-    // Update request status to "rejected" and unassign partner/branch
+    // Update request status to "rejected" and unassign partner/branch (MUST complete before sending emails)
     await db
       .update(requests)
       .set({
-        status: "rejected",
+        status: "unassigned", // Rejected requests become unassigned
         partnerId: null,
         branchId: null,
-        rejectionReason: validatedData.reason,
+        rejectedAt: new Date(),
         updatedAt: new Date(),
       })
       .where(eq(requests.id, request.id));
 
+    logger.info("Request status updated to rejected", {
+      requestId: request.id,
+      requestNumber: idParam,
+      reason: validatedData.reason,
+    });
+
     // Log action in timeline
     await db.insert(requestStatusLog).values({
       requestId: request.id,
-      status: "rejected",
+      status: "unassigned", // Log as unassigned since that's the actual status
       changedById: userId,
       notes: `Partner rejected: ${validatedData.reason}`,
       createdAt: new Date(),
     });
 
+    logger.info("Status change logged in timeline", {
+      requestId: request.id,
+    });
+
     // Get full request details for email notification
+    // NOTE: Status change is complete - now safe to send notification emails
     const requestDetails = await db
       .select({
         requestNumber: requests.requestNumber,
@@ -163,7 +184,7 @@ export default async function handler(
 
     if (requestDetails.length > 0) {
       const details = requestDetails[0];
-      
+
       // Fetch all active admin users to notify them
       const adminUsers = await db
         .select({
@@ -173,7 +194,7 @@ export default async function handler(
         .from(users)
         .where(
           and(
-            sql`${users.userType} = 'admin'::user_type_enum`,
+            or(eq(users.userType, "admin"), eq(users.userType, "operation")),
             eq(users.isActive, true),
             eq(users.isDeleted, false)
           )
@@ -181,7 +202,7 @@ export default async function handler(
 
       logger.info("Fetched admin users for notification", {
         count: adminUsers.length,
-        admins: adminUsers.map(a => a.email),
+        admins: adminUsers.map((a) => a.email),
       });
 
       // Send email notifications to each admin (fire and forget)
@@ -191,7 +212,7 @@ export default async function handler(
             .sendRequestRejectedEmail(
               {
                 requestNumber: details.requestNumber || "",
-                requestId,
+                requestId: request.id,
                 customerName: details.customerName || "",
                 customerEmail: details.customerEmail || "",
                 partnerName: details.partnerName || "",
@@ -200,7 +221,7 @@ export default async function handler(
                 branchAddress: details.branchAddress || "",
                 serviceName: details.serviceName || "",
                 categoryName: details.categoryName || "",
-                status: "rejected",
+                status: "unassigned",
                 rejectionReason: validatedData.reason,
               },
               admin.email || "",
@@ -208,16 +229,20 @@ export default async function handler(
             )
             .catch((error) => {
               logger.error("Failed to send rejection notification to admin", {
-                error,
-                requestId,
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                requestId: request.id,
                 adminEmail: admin.email,
               });
             });
         }
       } else {
-        logger.warn("No active admin users found to notify about request rejection", {
-          requestId: request.id,
-        });
+        logger.warn(
+          "No active admin users found to notify about request rejection",
+          {
+            requestId: request.id,
+          }
+        );
       }
     }
 
@@ -232,8 +257,8 @@ export default async function handler(
 
     return sendSuccessResponse(res, {
       message: "Request rejected successfully",
-      requestId,
-      status: "rejected",
+      requestId: request.id,
+      status: "unassigned",
     });
   } catch (error) {
     const apiError = handleApiError(error);
@@ -245,4 +270,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
 import { authService } from "../../../../lib/services/authService";
-import { requireAuth, requirePermission } from "../../../../lib/middleware/authMiddleware";
+import {
+  AuthenticatedRequest,
+  requireAuth,
+} from "../../../../lib/middleware/authMiddleware";
 import {
   handleApiError,
   sendSuccessResponse,
@@ -31,20 +34,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
-    const { userId } = (req as any).auth;
+    const user = await requireAuth(req as AuthenticatedRequest, res);
 
     // Validate request body
     const validatedData = changePasswordSchema.parse(req.body);
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     // Change password
-    await authService.changePassword(userId, {
+    await authService.changePassword(user.id, {
       currentPassword: validatedData.currentPassword,
       newPassword: validatedData.newPassword,
     });
@@ -54,7 +50,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       req.url!,
       200,
       0,
-      userId,
+      user.id,
       req.headers["x-request-id"] as string
     );
 
@@ -72,5 +68,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default requireAuth(handler);
-
+export default handler;

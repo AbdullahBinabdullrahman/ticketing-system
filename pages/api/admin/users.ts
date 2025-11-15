@@ -59,13 +59,6 @@ export default async function handler(
       });
     }
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     // Handle GET request - List all admin users
     if (req.method === "GET") {
       const users = await getAdminUsers();
@@ -140,4 +133,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

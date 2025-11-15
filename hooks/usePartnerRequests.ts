@@ -103,7 +103,7 @@ export function usePartnerRequests(filters?: RequestFiltersInput) {
 
   const { data, error, mutate, isLoading } =
     useSWR<PaginatedPartnerRequestsResponse>(endpoint, fetcher, {
-      refreshInterval: 30000, // Auto-refresh every 30 seconds
+      refreshInterval: 60000, // Auto-refresh every 30 seconds
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
       dedupingInterval: 5000, // Prevent duplicate requests within 5 seconds

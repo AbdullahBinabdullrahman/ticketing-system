@@ -67,8 +67,11 @@ export default function PartnerPickupOptionsPage() {
       toast.success(t("success.assigned"));
       setIsAddingPickupOption(false);
       setSelectedPickupOptionId(null);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || t("errors.generic"));
+    } catch (error: unknown) {
+      const errorObject = error as {
+        response?: { data?: { message?: string } };
+      };
+      toast.error(errorObject.response?.data?.message || t("errors.generic"));
     } finally {
       setIsSubmitting(false);
     }
@@ -82,8 +85,11 @@ export default function PartnerPickupOptionsPage() {
     try {
       await removePickupOption(pickupOptionTypeId);
       toast.success(t("success.deleted"));
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || t("errors.generic"));
+    } catch (error: unknown) {
+      const errorObject = error as {
+        response?: { data?: { message?: string } };
+      };
+      toast.error(errorObject.response?.data?.message || t("errors.generic"));
     }
   };
 
@@ -174,10 +180,7 @@ export default function PartnerPickupOptionsPage() {
           {/* Assigned Pickup Options */}
           <BlurFade delay={0.2}>
             {partnerPickupOptions.length === 0 ? (
-              <MagicCard
-                className="p-12 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 text-center"
-                gradientColor="#d1d5db"
-              >
+              <MagicCard className="p-12 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 text-center">
                 <Truck className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   {t("pickupOptions.noPickupOptions")}
@@ -197,10 +200,7 @@ export default function PartnerPickupOptionsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {partnerPickupOptions.map((pickupOption) => (
                   <BlurFade key={pickupOption.id} delay={0.3}>
-                    <MagicCard
-                      className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow"
-                      gradientColor="#d1d5db"
-                    >
+                    <MagicCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
@@ -383,4 +383,3 @@ export default function PartnerPickupOptionsPage() {
     </AdminLayout>
   );
 }
-

@@ -47,14 +47,6 @@ export default async function handler(
       });
     }
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      { userId },
-      undefined,
-      req.headers["x-request-id"] as string
-    );
-
     // Calculate date ranges
     const now = new Date();
     const todayStart = new Date(
@@ -92,20 +84,24 @@ export default async function handler(
         .select({ count: count() })
         .from(requests)
         .where(
-          sql`${requests.status} IN ('assigned', 'confirmed', 'in_progress')`
+          sql`${requests.status} IN ('assigned'::request_status_enum, 'confirmed'::request_status_enum, 'in_progress'::request_status_enum)`
         ),
 
       // Unassigned requests
       db
         .select({ count: count() })
         .from(requests)
-        .where(sql`${requests.status} IN ('submitted', 'unassigned')`),
+        .where(
+          sql`${requests.status} IN ('submitted'::request_status_enum, 'unassigned'::request_status_enum)`
+        ),
 
       // Completed requests
       db
         .select({ count: count() })
         .from(requests)
-        .where(sql`${requests.status} IN ('completed', 'closed')`),
+        .where(
+          sql`${requests.status} IN ('completed'::request_status_enum, 'closed'::request_status_enum)`
+        ),
 
       // Today's completed requests
       db
@@ -113,7 +109,7 @@ export default async function handler(
         .from(requests)
         .where(
           and(
-            sql`${requests.status} IN ('completed', 'closed')`,
+            sql`${requests.status} IN ('completed'::request_status_enum, 'closed'::request_status_enum)`,
             gte(requests.completedAt, todayStart)
           )
         ),
@@ -193,7 +189,7 @@ export default async function handler(
         .from(requests)
         .innerJoin(partners, eq(requests.partnerId, partners.id))
         .where(
-          sql`${requests.status} IN ('completed', 'closed') AND ${requests.partnerId} IS NOT NULL`
+          sql`${requests.status} IN ('completed'::request_status_enum, 'closed'::request_status_enum) AND ${requests.partnerId} IS NOT NULL`
         )
         .groupBy(requests.partnerId, partners.name)
         .orderBy(desc(count()))

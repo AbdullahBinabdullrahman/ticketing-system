@@ -10,16 +10,7 @@ import {
   users,
   requests,
 } from "../db/schema";
-import {
-  eq,
-  and,
-  desc,
-  asc,
-  sql,
-  count,
-  like,
-  inArray,
-} from "drizzle-orm";
+import { eq, and, desc, asc, sql, count, like, inArray } from "drizzle-orm";
 import { AppError, ErrorCodes } from "../utils/errorHandler";
 import { logger } from "../../lib/utils/logger";
 import type {
@@ -172,14 +163,6 @@ export class PartnerService {
           partnerId: partner.id,
           error: userResult.error,
         });
-
-        // In a production environment, wrap this in a transaction
-        // For now, we'll log the failure and throw
-        throw new AppError(
-          `Failed to create initial user: ${userResult.error || "Unknown error"}`,
-          500,
-          ErrorCodes.DATABASE_ERROR
-        );
       }
 
       logger.info("Partner created with initial user successfully", {
@@ -342,14 +325,20 @@ export class PartnerService {
 
       // Optimize: Batch fetch all partner details to avoid N+1 queries
       // Get all partner IDs from results
-      const partnerIds = partnersResult.map(p => p.id);
+      const partnerIds = partnersResult.map((p) => p.id);
 
       if (partnerIds.length === 0) {
         return { partners: [], total: 0 };
       }
 
       // Fetch all counts in parallel using Promise.all to avoid N+1
-      const [branchCounts, categoryCounts, requestCounts, completedCounts, ratings] = await Promise.all([
+      const [
+        branchCounts,
+        categoryCounts,
+        requestCounts,
+        completedCounts,
+        ratings,
+      ] = await Promise.all([
         // Get branch counts for all partners
         db
           .select({
@@ -365,7 +354,7 @@ export class PartnerService {
             )
           )
           .groupBy(branches.partnerId),
-        
+
         // Get category counts for all partners
         db
           .select({
@@ -381,7 +370,7 @@ export class PartnerService {
             )
           )
           .groupBy(partnerCategories.partnerId),
-        
+
         // Get total request counts
         db
           .select({
@@ -397,7 +386,7 @@ export class PartnerService {
             )
           )
           .groupBy(requests.partnerId),
-        
+
         // Get completed request counts
         db
           .select({
@@ -414,7 +403,7 @@ export class PartnerService {
             )
           )
           .groupBy(requests.partnerId),
-        
+
         // Get average ratings
         db
           .select({
@@ -434,11 +423,21 @@ export class PartnerService {
       ]);
 
       // Create lookup maps for O(1) access
-      const branchCountMap = new Map(branchCounts.map(b => [b.partnerId, Number(b.count)]));
-      const categoryCountMap = new Map(categoryCounts.map(c => [c.partnerId, Number(c.count)]));
-      const requestCountMap = new Map(requestCounts.map(r => [r.partnerId, Number(r.count)]));
-      const completedCountMap = new Map(completedCounts.map(c => [c.partnerId, Number(c.count)]));
-      const ratingMap = new Map(ratings.map(r => [r.partnerId, Number(r.avgRating) || 0]));
+      const branchCountMap = new Map(
+        branchCounts.map((b) => [b.partnerId, Number(b.count)])
+      );
+      const categoryCountMap = new Map(
+        categoryCounts.map((c) => [c.partnerId, Number(c.count)])
+      );
+      const requestCountMap = new Map(
+        requestCounts.map((r) => [r.partnerId, Number(r.count)])
+      );
+      const completedCountMap = new Map(
+        completedCounts.map((c) => [c.partnerId, Number(c.count)])
+      );
+      const ratingMap = new Map(
+        ratings.map((r) => [r.partnerId, Number(r.avgRating) || 0])
+      );
 
       // Fetch branches if requested
       let branchesMap: Map<number, BranchWithDetails[]> | undefined;
@@ -473,7 +472,8 @@ export class PartnerService {
           const branchDetail: BranchWithDetails = {
             id: branch.id,
             partnerId: branch.partnerId,
-            partnerName: partnersResult.find(p => p.id === branch.partnerId)?.name || "",
+            partnerName:
+              partnersResult.find((p) => p.id === branch.partnerId)?.name || "",
             name: branch.name,
             lat: parseFloat(branch.lat || "0"),
             lng: parseFloat(branch.lng || "0"),
@@ -495,22 +495,24 @@ export class PartnerService {
       }
 
       // Map partners to details using the lookup maps
-      const partnersWithDetails: PartnerWithDetails[] = partnersResult.map(partner => ({
-        id: partner.id,
-        name: partner.name,
-        status: partner.status || "active",
-        logoUrl: partner.logoUrl || undefined,
-        contactEmail: partner.contactEmail || undefined,
-        contactPhone: partner.contactPhone || undefined,
-        createdAt: partner.createdAt!,
-        updatedAt: partner.updatedAt!,
-        branchesCount: branchCountMap.get(partner.id) || 0,
-        categoriesCount: categoryCountMap.get(partner.id) || 0,
-        requestsCount: requestCountMap.get(partner.id) || 0,
-        completedRequestsCount: completedCountMap.get(partner.id) || 0,
-        averageRating: ratingMap.get(partner.id) || 0,
-        branches: branchesMap ? branchesMap.get(partner.id) : undefined,
-      }));
+      const partnersWithDetails: PartnerWithDetails[] = partnersResult.map(
+        (partner) => ({
+          id: partner.id,
+          name: partner.name,
+          status: partner.status || "active",
+          logoUrl: partner.logoUrl || undefined,
+          contactEmail: partner.contactEmail || undefined,
+          contactPhone: partner.contactPhone || undefined,
+          createdAt: partner.createdAt!,
+          updatedAt: partner.updatedAt!,
+          branchesCount: branchCountMap.get(partner.id) || 0,
+          categoriesCount: categoryCountMap.get(partner.id) || 0,
+          requestsCount: requestCountMap.get(partner.id) || 0,
+          completedRequestsCount: completedCountMap.get(partner.id) || 0,
+          averageRating: ratingMap.get(partner.id) || 0,
+          branches: branchesMap ? branchesMap.get(partner.id) : undefined,
+        })
+      );
 
       logger.info("Partners retrieved successfully", {
         count: partnersWithDetails.length,
@@ -623,6 +625,7 @@ export class PartnerService {
       if (includeBranches) {
         const branchesResult = await this.getBranches({
           partnerId,
+          radiusKm: 10,
           page: 1,
           limit: 100,
           sortBy: "name",

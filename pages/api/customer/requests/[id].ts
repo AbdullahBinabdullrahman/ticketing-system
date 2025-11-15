@@ -29,17 +29,10 @@ export default async function handler(
 
     const requestNumberOrId = req.query.id as string;
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     if (req.method === "GET") {
       // Get request details by request number (or fallback to ID for backward compatibility)
       let result;
-      
+
       // Check if it's a request number (starts with REQ-)
       if (requestNumberOrId.startsWith("REQ-")) {
         result = await requestService.getRequestByNumber(requestNumberOrId);
@@ -77,9 +70,11 @@ export default async function handler(
     } else if (req.method === "POST") {
       // Rate request - need to get the numeric ID first
       let requestId: number;
-      
+
       if (requestNumberOrId.startsWith("REQ-")) {
-        const request = await requestService.getRequestByNumber(requestNumberOrId);
+        const request = await requestService.getRequestByNumber(
+          requestNumberOrId
+        );
         requestId = request.id;
       } else {
         requestId = parseInt(requestNumberOrId);

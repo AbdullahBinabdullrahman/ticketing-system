@@ -66,13 +66,6 @@ export default async function handler(
     // Validate request body
     const validatedData = createUserSchema.parse(req.body);
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     // Create partner user using the service
     const result = await createPartnerUser({
       partnerId,

@@ -46,13 +46,6 @@ export default async function handler(
     const token = authHeader.substring(7);
     const { userId } = await authService.verifyToken(token);
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     // Validate request body
     const validatedData = changePasswordSchema.parse(req.body);
 
@@ -86,6 +79,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-
-
-

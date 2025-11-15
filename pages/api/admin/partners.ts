@@ -22,18 +22,13 @@ export default async function handler(
 ) {
   try {
     // Require authentication and partner_manage permission
+    console.time("requireAuth");
     await requireAuth(req as AuthenticatedRequest, res);
+    console.timeEnd("requireAuth");
+    console.time("requirePermission");
     await requirePermission(req as AuthenticatedRequest, res, "partner_manage");
-
+    console.timeEnd("requirePermission");
     const userId = (req as AuthenticatedRequest).userId!;
-
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      { userId },
-      undefined,
-      req.headers["x-request-id"] as string
-    );
 
     if (req.method === "GET") {
       // Get partners with filters

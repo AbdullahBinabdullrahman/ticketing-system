@@ -19,7 +19,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createRequestSchema } from "@/schemas/requests";
 import { z } from "zod";
@@ -41,7 +41,7 @@ export default function CustomerNewRequestPage() {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CreateRequestForm>({
     resolver: zodResolver(createRequestSchema),
@@ -54,10 +54,10 @@ export default function CustomerNewRequestPage() {
     },
   });
 
-  const selectedCategory = watch("categoryId");
-  const selectedPickupOption = watch("pickupOptionId");
-  const customerLat = watch("customerLat");
-  const customerLng = watch("customerLng");
+  const selectedCategory = useWatch({ control, name: "categoryId" });
+  const selectedPickupOption = useWatch({ control, name: "pickupOptionId" });
+  const customerLat = useWatch({ control, name: "customerLat" });
+  const customerLng = useWatch({ control, name: "customerLng" });
 
   const { categories, isLoading: categoriesLoading } = useCategories();
   const { pickupOptions, isLoading: pickupOptionsLoading } = usePickupOptions();
@@ -66,11 +66,11 @@ export default function CustomerNewRequestPage() {
     useServices(selectedCategory);
 
   const selectedPickupOptionData = pickupOptions?.find(
-    (opt: { id: number; requiresServiceSelection: boolean }) =>
-      opt.id === selectedPickupOption
+    (opt) => opt.id === selectedPickupOption
   );
-  const requiresServiceSelection =
-    selectedPickupOptionData?.requiresServiceSelection;
+  const requiresServiceSelection = Boolean(
+    selectedPickupOptionData?.requiresServiceSelection
+  );
 
   useEffect(() => {
     if (selectedCategory && !requiresServiceSelection) {
@@ -126,23 +126,23 @@ export default function CustomerNewRequestPage() {
                 </p>
                 <p className="mt-1">{t("customer.trackYourRequest")}</p>
               </div>
-            <div className="mt-4">
-              <button
-                onClick={() =>
-                  router.push(`/customer/requests/${response.requestNumber}`)
-                }
-                className="text-sm font-medium text-primary-600 hover:text-primary-500"
-              >
-                {t("customer.viewRequest")} →
-              </button>
+              <div className="mt-4">
+                <button
+                  onClick={() =>
+                    router.push(`/customer/requests/${response.requestNumber}`)
+                  }
+                  className="text-sm font-medium text-primary-600 hover:text-primary-500"
+                >
+                  {t("customer.viewRequest")} →
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>,
-      { duration: 8000 }
-    );
+        </div>,
+        { duration: 8000 }
+      );
 
-    router.push(`/customer/requests/${response.requestNumber}`);
+      router.push(`/customer/requests/${response.requestNumber}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -235,19 +235,13 @@ export default function CustomerNewRequestPage() {
                         {pickupOptionsLoading ? (
                           <option disabled>{t("common.loading")}</option>
                         ) : (
-                          pickupOptions?.map(
-                            (option: {
-                              id: number;
-                              name: string;
-                              nameAr: string;
-                            }) => (
-                              <option key={option.id} value={option.id}>
-                                {i18n.language === "ar"
-                                  ? option.nameAr
-                                  : option.name}
-                              </option>
-                            )
-                          )
+                          pickupOptions?.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {i18n.language === "ar"
+                                ? option.nameAr ?? option.name
+                                : option.name}
+                            </option>
+                          ))
                         )}
                       </select>
                       {errors.pickupOptionId && (

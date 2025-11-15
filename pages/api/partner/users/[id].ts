@@ -76,13 +76,6 @@ export default async function handler(
       });
     }
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      currentUserId,
-      req.headers["x-request-id"] as string
-    );
-
     // Verify the target user belongs to this partner
     const targetUserData = await db
       .select()
@@ -162,4 +155,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

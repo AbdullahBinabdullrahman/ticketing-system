@@ -69,6 +69,8 @@ const requiredNumberFromQuery = z.preprocess((val) => {
 
 // Request filters schema
 export const requestFiltersSchema = z.object({
+  customerName: z.string().optional(),
+  customerPhone: z.string().optional(),
   status: z
     .enum([
       "submitted",
@@ -97,6 +99,15 @@ export const requestFiltersSchema = z.object({
   }),
   limit: requiredNumberFromQuery.refine((val) => val >= 1 && val <= 100, {
     message: "Limit must be between 1 and 100",
+  }),
+  pickupOptionId: numberFromQuery.refine(
+    (val) => val === undefined || val > 0,
+    {
+      message: "Pickup option ID must be positive",
+    }
+  ),
+  serviceId: numberFromQuery.refine((val) => val === undefined || val > 0, {
+    message: "Service ID must be positive",
   }),
   sortBy: z
     .enum([

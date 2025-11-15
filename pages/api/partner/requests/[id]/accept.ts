@@ -11,7 +11,7 @@ import {
   branches,
   partners,
 } from "../../../../../lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import {
   handleApiError,
   sendSuccessResponse,
@@ -76,7 +76,8 @@ export default async function handler(
     logger.apiRequest(
       req.method!,
       req.url!,
-      userId,
+      { userId },
+      undefined,
       req.headers["x-request-id"] as string
     );
 
@@ -134,7 +135,7 @@ export default async function handler(
       }
     }
 
-    // Update request status to "confirmed"
+    // Update request status to "confirmed" (MUST complete before sending emails)
     await db
       .update(requests)
       .set({
@@ -143,6 +144,11 @@ export default async function handler(
         updatedAt: new Date(),
       })
       .where(eq(requests.id, request.id));
+
+    logger.info("Request status updated to confirmed", {
+      requestId: request.id,
+      requestNumber: idParam,
+    });
 
     // Log action in timeline
     await db.insert(requestStatusLog).values({
@@ -153,7 +159,12 @@ export default async function handler(
       createdAt: new Date(),
     });
 
+    logger.info("Status change logged in timeline", {
+      requestId: request.id,
+    });
+
     // Get full request details for email notification
+    // NOTE: Status change is complete - now safe to send notification emails
     const requestDetails = await db
       .select({
         requestNumber: requests.requestNumber,
@@ -188,7 +199,7 @@ export default async function handler(
         .from(users)
         .where(
           and(
-            sql`${users.userType} = 'admin'::user_type_enum`,
+            or(eq(users.userType, "admin"), eq(users.userType, "operation")),
             eq(users.isActive, true),
             eq(users.isDeleted, false)
           )

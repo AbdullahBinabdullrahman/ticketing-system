@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { db } from "../../../../lib/db/connection";
-import { requests, users } from "../../../../lib/db/schema";
+import { requests } from "../../../../lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { authService } from "../../../../lib/services/authService";
 import {
@@ -13,7 +13,7 @@ import { logger } from "../../../../lib/utils/logger";
 /**
  * Search Customer Request by Number
  * GET /api/customer/requests/search?number=REQ-xxxxx
- * 
+ *
  * Allows customer to search for their request by request number
  */
 export default async function handler(
@@ -47,13 +47,6 @@ export default async function handler(
         statusCode: 400,
       });
     }
-
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
 
     // Search for request by number and customer ID
     const request = await db
@@ -102,4 +95,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

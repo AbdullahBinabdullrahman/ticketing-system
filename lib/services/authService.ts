@@ -35,7 +35,7 @@ export interface UserProfile {
   name: string;
   email: string;
   phone?: string;
-  userType: "admin" | "partner" | "customer";
+  userType: "admin" | "partner" | "customer" | "operation";
   roleId: number;
   partnerId?: number;
   languagePreference?: string;
@@ -496,7 +496,7 @@ export class AuthService {
   /**
    * Generate JWT tokens
    */
-  private async generateTokens(
+  async generateTokens(
     userId: number,
     deviceInfo?: string,
     ipAddress?: string

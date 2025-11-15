@@ -12,7 +12,7 @@ import { logger } from "../../lib/utils/logger";
 /**
  * Pickup Options API
  * GET /api/pickup-options - Get all active pickup options (public endpoint)
- * 
+ *
  * This is a public endpoint accessible without authentication
  * Used by customers and mobile app to get available pickup options
  */
@@ -25,13 +25,6 @@ export default async function handler(
   }
 
   try {
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      undefined,
-      req.headers["x-request-id"] as string
-    );
-
     // Get all active pickup options
     const options = await db
       .select({
@@ -69,7 +62,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-
-
-
-

@@ -10,7 +10,6 @@ import {
   MapPin,
   Phone,
   User,
-  Plus,
   Edit,
   Trash2,
   AlertCircle,
@@ -22,23 +21,23 @@ import { usePartners } from "../../hooks/usePartners";
 import { Skeleton } from "../../components/ui/skeleton";
 import toast from "react-hot-toast";
 
-interface Branch {
-  id: number;
-  partnerId: number;
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-  serviceRadius: number;
-  contactName?: string;
-  contactPhone?: string;
-  createdAt: string;
-  updatedAt: string;
-  partner?: {
-    id: number;
-    name: string;
-  };
-}
+// interface Branch {
+//   id: number;
+//   partnerId: number;
+//   name: string;
+//   address: string;
+//   lat: number;
+//   lng: number;
+//   serviceRadius: number;
+//   contactName?: string;
+//   contactPhone?: string;
+//   createdAt: string;
+//   updatedAt: string;
+//   partner?: {
+//     id: number;
+//     name: string;
+//   };
+// }
 
 export default function AdminBranchesPage() {
   const { t, i18n } = useTranslation("common");
@@ -50,7 +49,11 @@ export default function AdminBranchesPage() {
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>("all");
 
   // Fetch data
-  const { branches, isLoading: branchesLoading, error: branchesError } = useBranches();
+  const {
+    branches,
+    isLoading: branchesLoading,
+    error: branchesError,
+  } = useBranches();
   const { partners, isLoading: partnersLoading } = usePartners();
 
   // Filter branches based on search and partner filter
@@ -88,14 +91,14 @@ export default function AdminBranchesPage() {
 
   // Handle edit branch
   const handleEdit = (branchId: number) => {
-    toast.info("Branch editing coming soon!");
+    toast.error(`Branch editing coming soon! ${branchId}`);
     // TODO: Navigate to edit page when implemented
     // router.push(`/admin/branches/${branchId}/edit`);
   };
 
   // Handle delete branch
   const handleDelete = (branchId: number) => {
-    toast.info("Branch deletion coming soon!");
+    toast.error(`Branch deletion coming soon! ${branchId}`);
     // TODO: Implement delete functionality
   };
 
@@ -164,7 +167,7 @@ export default function AdminBranchesPage() {
         {/* Stats */}
         <BlurFade delay={0.15}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+            <div className=" from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">
@@ -178,7 +181,7 @@ export default function AdminBranchesPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
+            <div className=" from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-green-700 dark:text-green-300 mb-1">
@@ -192,7 +195,7 @@ export default function AdminBranchesPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+            <div className=" from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-purple-700 dark:text-purple-300 mb-1">
@@ -266,7 +269,7 @@ export default function AdminBranchesPage() {
               <BlurFade key={branch.id} delay={0.25 + index * 0.05}>
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all overflow-hidden">
                   {/* Partner Badge */}
-                  <div className="bg-gradient-to-r from-primary-500 to-primary-600 dark:from-primary-600 dark:to-primary-700 px-4 py-2">
+                  <div className=" from-primary-500 to-primary-600 dark:from-primary-600 dark:to-primary-700 px-4 py-2">
                     <p className="text-white text-sm font-semibold truncate">
                       {getPartnerName(branch.partnerId)}
                     </p>
@@ -281,7 +284,7 @@ export default function AdminBranchesPage() {
                     <div className="space-y-2 mb-4">
                       {/* Address */}
                       <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400 mt-1 flex-shrink-0" />
+                        <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400 mt-1 " />
                         <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
                           {branch.address}
                         </p>
@@ -290,7 +293,7 @@ export default function AdminBranchesPage() {
                       {/* Contact Name */}
                       {branch.contactName && (
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                          <User className="h-4 w-4 text-gray-500 dark:text-gray-400 " />
                           <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
                             {branch.contactName}
                           </p>
@@ -300,7 +303,7 @@ export default function AdminBranchesPage() {
                       {/* Contact Phone */}
                       {branch.contactPhone && (
                         <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                          <Phone className="h-4 w-4 text-gray-500 dark:text-gray-400 " />
                           <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
                             {branch.contactPhone}
                           </p>
@@ -309,11 +312,12 @@ export default function AdminBranchesPage() {
 
                       {/* Service Radius */}
                       <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0 flex items-center justify-center">
+                        <div className="h-4 w-4 text-gray-500 dark:text-gray-400  flex items-center justify-center">
                           <div className="h-3 w-3 rounded-full border-2 border-gray-500 dark:border-gray-400"></div>
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {t("branches.serviceRadius")}: {branch.serviceRadius} km
+                          {t("branches.serviceRadius")}: {branch.serviceRadius}{" "}
+                          km
                         </p>
                       </div>
                     </div>

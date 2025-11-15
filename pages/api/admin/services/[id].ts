@@ -65,13 +65,6 @@ export default async function handler(
       });
     }
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     if (req.method === "GET") {
       // Get service by ID with category info
       const service = await db
@@ -227,4 +220,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

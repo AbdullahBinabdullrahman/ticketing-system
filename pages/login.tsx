@@ -19,7 +19,6 @@ import { ShineBorder } from "../components/ui/shine-border";
 import { BlurFade } from "../components/ui/blur-fade";
 import { AnimatedGradientText } from "../components/ui/animated-gradient-text";
 import { BorderBeam } from "../components/ui/border-beam";
-import { colors } from "@/config/colors";
 
 /**
  * Enhanced Login Page Component
@@ -96,7 +95,7 @@ export default function LoginPage() {
   if (loading) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50"
+        className="min-h-screen flex items-center justify-center  from-indigo-50 via-white to-purple-50"
         dir={isRtl ? "rtl" : "ltr"}
       >
         <motion.div
@@ -120,7 +119,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden"
+      className="min-h-screen flex items-center justify-center  from-indigo-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden"
       dir={isRtl ? "rtl" : "ltr"}
     >
       {/* Background decorative elements */}
@@ -143,7 +142,7 @@ export default function LoginPage() {
                 damping: 20,
                 delay: 0.1,
               }}
-              className="mx-auto h-16 w-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl relative"
+              className="mx-auto h-16 w-16  from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl relative"
             >
               <Shield className="h-8 w-8 text-white" />
               <BorderBeam size={60} duration={3} />
@@ -169,7 +168,7 @@ export default function LoginPage() {
               transition={{ delay: 0.3 }}
               className="mt-4 inline-flex relative"
             >
-              <div className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full relative">
+              <div className="px-4 py-2  from-indigo-600 to-purple-600 rounded-full relative">
                 <ShineBorder shineColor="#818cf8" duration={3} />
                 <div className="flex items-center gap-2 relative z-10">
                   <Sparkles className="h-4 w-4 text-white" />
@@ -199,10 +198,7 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <BlurFade delay={0.5} inView>
-          <MagicCard
-            className="p-8 bg-white/80 backdrop-blur-sm shadow-2xl"
-            gradientColor="#d1d5db"
-          >
+          <MagicCard className="p-8 bg-white/80 backdrop-blur-sm shadow-2xl">
             <form className="space-y-6" onSubmit={handleSubmit}>
               <AnimatePresence mode="wait">
                 <motion.div
@@ -352,7 +348,7 @@ export default function LoginPage() {
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={isSubmitting}
-                  className="group relative w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className="group relative w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent text-base font-semibold rounded-xl text-white  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   {isSubmitting ? (
                     <>

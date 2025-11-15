@@ -5,19 +5,19 @@ export interface ApiError {
   message: string;
   code?: string;
   statusCode: number;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export class AppError extends Error {
   public statusCode: number;
   public code?: string;
-  public details?: any;
+  public details?: Record<string, unknown>;
 
   constructor(
     message: string,
     statusCode: number = 500,
     code?: string,
-    details?: any
+    details?: Record<string, unknown>
   ) {
     super(message);
     this.statusCode = statusCode;
@@ -39,17 +39,22 @@ export function handleApiError(error: unknown): ApiError {
 
   if (error instanceof ZodError) {
     // Format Zod errors for better readability
-    const formattedErrors = error.errors.map((err) => ({
+    const formattedErrors = error.issues.map((err) => ({
       field: err.path.join("."),
       message: err.message,
       code: err.code,
     }));
-    
+
     return {
-      message: `Validation error: ${formattedErrors.map(e => `${e.field}: ${e.message}`).join(", ")}`,
+      message: `Validation error: ${formattedErrors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join(", ")}`,
       code: "VALIDATION_ERROR",
       statusCode: 400,
-      details: formattedErrors,
+      details: formattedErrors.reduce((acc, err) => {
+        acc[err.field] = err.message;
+        return acc;
+      }, {} as Record<string, string>),
     };
   }
 
@@ -67,7 +72,7 @@ export function handleApiError(error: unknown): ApiError {
 }
 
 export function sendErrorResponse(res: NextApiResponse, error: ApiError) {
-  const { statusCode, message, code, details } = error;
+  const { statusCode, message, code, details = {} } = error;
 
   res.status(statusCode).json({
     success: false,
