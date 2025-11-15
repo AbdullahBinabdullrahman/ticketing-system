@@ -112,6 +112,7 @@ export const users = pgTable("users", {
   ),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
+  otpEnabled: boolean("otp_enabled").default(false),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   createdById: integer("created_by_id"),

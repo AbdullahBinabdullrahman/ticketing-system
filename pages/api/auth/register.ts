@@ -17,13 +17,6 @@ export default async function handler(
   }
 
   try {
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      undefined,
-      req.headers["x-request-id"] as string
-    );
-
     // Validate request body
     const validatedData = registerSchema.parse(req.body);
 

@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { authService } from "../../../lib/services/authService";
 import { db } from "../../../lib/db/connection";
-import { users } from "../../../lib/db/schema";
+import { roles, users } from "../../../lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import {
   handleApiError,
@@ -59,13 +59,6 @@ export default async function handler(
 
     const partnerId = userProfile.partnerId;
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     if (req.method === "GET") {
       // Get all partner users
       const usersData = await db
@@ -76,17 +69,12 @@ export default async function handler(
           phone: users.phone,
           userType: users.userType,
           isActive: users.isActive,
-          otpEnabled: users.otpEnabled,
+          // otpEnabled: users.otpEnabled,
           createdAt: users.createdAt,
           lastLoginAt: users.lastLoginAt,
         })
         .from(users)
-        .where(
-          and(
-            eq(users.partnerId, partnerId),
-            eq(users.isDeleted, false)
-          )
-        );
+        .where(and(eq(users.partnerId, partnerId), eq(users.isDeleted, false)));
 
       logger.apiResponse(
         req.method!,
@@ -110,10 +98,7 @@ export default async function handler(
         .select()
         .from(users)
         .where(
-          and(
-            eq(users.email, validatedData.email),
-            eq(users.isDeleted, false)
-          )
+          and(eq(users.email, validatedData.email), eq(users.isDeleted, false))
         )
         .limit(1);
 
@@ -128,6 +113,11 @@ export default async function handler(
       // Generate temporary password
       const tempPassword = Math.random().toString(36).slice(-10) + "A1!";
       const hashedPassword = await bcrypt.hash(tempPassword, 10);
+      const partnerRole = await db
+        .select()
+        .from(roles)
+        .where(eq(roles.name, "partner"))
+        .limit(1);
 
       // Create user
       const newUserData = await db
@@ -140,7 +130,8 @@ export default async function handler(
           userType: "partner",
           partnerId: partnerId,
           isActive: true,
-          otpEnabled: false,
+          // otpEnabled: false,
+          roleId: partnerRole[0].id,
           createdAt: new Date(),
           isDeleted: false,
         })
@@ -173,17 +164,21 @@ export default async function handler(
         req.headers["x-request-id"] as string
       );
 
-      return sendSuccessResponse(res, {
-        message: "User created successfully. Welcome email sent.",
-        user: {
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          phone: newUser.phone,
-          userType: newUser.userType,
-          isActive: newUser.isActive,
+      return sendSuccessResponse(
+        res,
+        {
+          message: "User created successfully. Welcome email sent.",
+          user: {
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            phone: newUser.phone,
+            userType: newUser.userType,
+            isActive: newUser.isActive,
+          },
         },
-      }, 201);
+        201
+      );
     }
   } catch (error) {
     const apiError = handleApiError(error);
@@ -195,4 +190,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

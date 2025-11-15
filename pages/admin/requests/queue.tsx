@@ -84,10 +84,7 @@ export default function AssignmentQueuePage() {
 
   return (
     <AdminLayout>
-      <div
-        className="space-y-6"
-        dir={i18n.language === "ar" ? "rtl" : "ltr"}
-      >
+      <div className="space-y-6" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
         {/* Header */}
         <BlurFade delay={0.1}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -111,7 +108,7 @@ export default function AssignmentQueuePage() {
 
         {/* Stats Bar */}
         <BlurFade delay={0.15}>
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg shadow-md p-6 text-white">
+          <div className=" from-orange-500 to-orange-600 rounded-lg shadow-md p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-orange-100 text-sm font-medium">
@@ -182,7 +179,7 @@ export default function AssignmentQueuePage() {
                     type="text"
                     name="search"
                     placeholder={t("searchByCustomerOrPhone")}
-                    value={filters.search || ""}
+                    value={filters.customerName || ""}
                     onChange={handleFilterChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
@@ -364,4 +361,3 @@ export async function getServerSideProps() {
     props: {},
   };
 }
-

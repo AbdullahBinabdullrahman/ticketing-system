@@ -1,12 +1,12 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { requestService } from "../../../lib/services/requestService";
-import { authService } from "../../../lib/services/authService";
+import { requestService } from "../../../../lib/services/requestService";
+import { authService } from "../../../../lib/services/authService";
 import {
   handleApiError,
   sendSuccessResponse,
   sendErrorResponse,
-} from "../../../lib/utils/errorHandler";
-import { logger } from "../../../lib/utils/logger";
+} from "../../../../lib/utils/errorHandler";
+import { logger } from "../../../../lib/utils/logger";
 
 export default async function handler(
   req: NextApiRequest,
@@ -39,13 +39,6 @@ export default async function handler(
         statusCode: 403,
       });
     }
-
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
 
     // Get unassigned requests
     const result = await requestService.getUnassignedRequests();

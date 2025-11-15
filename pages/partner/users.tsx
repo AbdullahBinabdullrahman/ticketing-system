@@ -47,8 +47,10 @@ export default function PartnerUsers() {
       setIsCreateModalOpen(false);
       setFormData({ name: "", email: "", phone: "", language: "en" });
       toast.success(t("partner.users.userCreated"));
-    } catch (_error) {
-      toast.error(t("errors.generic"));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : t("errors.generic");
+      toast.error(errorMessage);
     }
   };
 
@@ -63,8 +65,10 @@ export default function PartnerUsers() {
       setIsEditModalOpen(false);
       setSelectedUser(null);
       toast.success(t("partner.users.userUpdated"));
-    } catch (_error) {
-      toast.error(t("errors.generic"));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : t("errors.generic");
+      toast.error(errorMessage);
     }
   };
 
@@ -75,8 +79,10 @@ export default function PartnerUsers() {
       setIsDeleteModalOpen(false);
       setSelectedUser(null);
       toast.success(t("partner.users.userDeleted"));
-    } catch (_error) {
-      toast.error(t("errors.generic"));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : t("errors.generic");
+      toast.error(errorMessage);
     }
   };
 
@@ -163,7 +169,7 @@ export default function PartnerUsers() {
                       <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 dark:bg-indigo-900/20 rounded-full flex items-center justify-center">
+                            <div className=" h-10 w-10 bg-indigo-100 dark:bg-indigo-900/20 rounded-full flex items-center justify-center">
                               <span className="text-indigo-600 dark:text-indigo-400 font-medium">
                                 {user.name.charAt(0).toUpperCase()}
                               </span>
@@ -207,13 +213,17 @@ export default function PartnerUsers() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
-                            onClick={() => openEditModal(user)}
+                            onClick={() =>
+                              openEditModal(user as unknown as PartnerUser)
+                            }
                             className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 mr-4"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => openDeleteModal(user)}
+                            onClick={() =>
+                              openDeleteModal(user as unknown as PartnerUser)
+                            }
                             className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -330,7 +340,7 @@ export default function PartnerUsers() {
 
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                     <div className="flex gap-2">
-                      <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                      <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400  mt-0.5" />
                       <p className="text-sm text-blue-800 dark:text-blue-300">
                         {t("partner.users.sendWelcomeEmail")}
                       </p>
@@ -493,4 +503,3 @@ export default function PartnerUsers() {
     </PartnerLayout>
   );
 }
-

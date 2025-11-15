@@ -2,7 +2,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { partnerService } from "../../../../../lib/services/partnerService";
 import { authService } from "../../../../../lib/services/authService";
 import { db } from "../../../../../lib/db/connection";
-import { partnerPickupOptions, pickupOptionTypes } from "../../../../../lib/db/schema";
+import {
+  partnerPickupOptions,
+  pickupOptionTypes,
+} from "../../../../../lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import {
   handleApiError,
@@ -22,7 +25,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "GET" && req.method !== "POST" && req.method !== "DELETE") {
+  if (
+    req.method !== "GET" &&
+    req.method !== "POST" &&
+    req.method !== "DELETE"
+  ) {
     return res.status(405).json({ message: "Method not allowed" });
   }
 
@@ -59,13 +66,6 @@ export default async function handler(
         statusCode: 400,
       });
     }
-
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
 
     if (req.method === "GET") {
       // Get all pickup options assigned to this partner
@@ -156,7 +156,10 @@ export default async function handler(
         .where(
           and(
             eq(partnerPickupOptions.partnerId, partnerId),
-            eq(partnerPickupOptions.pickupOptionTypeId, validatedData.pickupOptionTypeId),
+            eq(
+              partnerPickupOptions.pickupOptionTypeId,
+              validatedData.pickupOptionTypeId
+            ),
             eq(partnerPickupOptions.isActive, true),
             eq(partnerPickupOptions.isDeleted, false)
           )
@@ -185,4 +188,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

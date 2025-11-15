@@ -2,7 +2,7 @@
  * Hook to automatically generate and manage test tokens
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { authManager } from "./authManager";
 import { TestAccounts } from "./testDataFactory";
 import { logger } from "../utils/logger";
@@ -97,10 +97,6 @@ export function useTestTokens(): TestTokens {
   };
 
   // Generate tokens on mount
-  useEffect(() => {
-    generateTokens();
-     
-  }, []);
 
   return {
     adminToken,
@@ -159,4 +155,3 @@ export function areTokensValid(): boolean {
     return false;
   }
 }
-

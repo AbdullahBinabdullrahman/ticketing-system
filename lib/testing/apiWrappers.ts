@@ -12,10 +12,10 @@ import http from "../utils/http";
 /**
  * Wrapped API call with logging and performance tracking
  */
-export async function makeTestApiCall<T = any>(
+export async function makeTestApiCall<T = Record<string, unknown>>(
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   endpoint: string,
-  data?: unknown
+  data?: Record<string, unknown>
 ): Promise<{ data: T; log: ApiCallLog }> {
   const startTime = Date.now();
   const role = authManager.getCurrentRole() || "admin";
@@ -67,24 +67,28 @@ export async function makeTestApiCall<T = any>(
     });
 
     return { data: response.data, log: apiLog };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorObject = error as {
+      response?: { data?: { message?: string }; status?: number } | undefined;
+      message?: string;
+    };
     const duration = Date.now() - startTime;
 
-    apiLog.error = error.response?.data?.message || error.message;
-    apiLog.statusCode = error.response?.status;
+    apiLog.error = errorObject.response?.data?.message || errorObject.message;
+    apiLog.statusCode = errorObject.response?.status;
     apiLog.duration = duration;
 
     performanceMonitor.logApiCall(apiLog);
 
     logger.error(`API Call Failed: ${method} ${endpoint}`, {
-      error: error.message,
-      status: error.response?.status,
+      error: errorObject.message,
+      status: errorObject.response?.status,
       duration: `${duration}ms`,
       role,
-      responseData: error.response?.data,
+      responseData: errorObject.response?.data,
     });
 
-    throw error;
+    throw errorObject;
   }
 }
 
@@ -98,11 +102,11 @@ export async function testLogin(email: string, password: string) {
 }
 
 // Customer Requests
-export async function testCreateRequest(requestData: any) {
+export async function testCreateRequest(requestData: Record<string, unknown>) {
   return makeTestApiCall("POST", "/customer/requests", requestData);
 }
 
-export async function testGetRequests(filters?: any) {
+export async function testGetRequests(filters?: Record<string, string>) {
   return makeTestApiCall(
     "GET",
     `/admin/requests?${new URLSearchParams(filters).toString()}`
@@ -140,7 +144,7 @@ export async function testGetUnassignedRequests() {
 }
 
 // Partner Request Management
-export async function testGetPartnerRequests(filters?: any) {
+export async function testGetPartnerRequests(filters?: Record<string, string>) {
   return makeTestApiCall(
     "GET",
     `/partner/requests?${new URLSearchParams(filters).toString()}`
@@ -161,20 +165,25 @@ export async function testUpdateRequestStatus(
 }
 
 // Partners and Branches
-export async function testGetPartners(filters?: any) {
-  return makeTestApiCall("GET", `/admin/partners?${new URLSearchParams(filters).toString()}`
-}
-
-export async function testCreatePartner(partnerData: any) {
-  return makeTestApiCall("POST", "/admin/partners", partnerData);
-}
-
-export async function testGetBranches(filters?: any) {
-  return makeTestApiCall("GET", `/admin/branches?${new URLSearchParams(filters).toString()}`
+export async function testGetPartners(filters?: Record<string, string>) {
+  return makeTestApiCall(
+    "GET",
+    `/admin/partners?${new URLSearchParams(filters).toString()}`
   );
 }
 
-export async function testCreateBranch(branchData: any) {
+export async function testCreatePartner(partnerData: Record<string, unknown>) {
+  return makeTestApiCall("POST", "/admin/partners", partnerData);
+}
+
+export async function testGetBranches(filters?: Record<string, string>) {
+  return makeTestApiCall(
+    "GET",
+    `/admin/branches?${new URLSearchParams(filters).toString()}`
+  );
+}
+
+export async function testCreateBranch(branchData: Record<string, unknown>) {
   return makeTestApiCall("POST", "/admin/branches", branchData);
 }
 
@@ -184,10 +193,14 @@ export async function testFindNearestBranch(
   categoryId?: number,
   partnerId?: number
 ) {
-  const params: any = { lat, lng };
+  const params: Record<string, unknown> = { lat, lng };
   if (categoryId) params.categoryId = categoryId;
   if (partnerId) params.partnerId = partnerId;
-  return makeTestApiCall("GET", `/admin/branches/nearest?${new URLSearchParams(params).toString()}`
+  return makeTestApiCall(
+    "GET",
+    `/admin/branches/nearest?${new URLSearchParams(
+      params as Record<string, string>
+    ).toString()}`
   );
 }
 
@@ -197,8 +210,10 @@ export async function testGetCategories() {
 }
 
 export async function testGetServices(categoryId?: number) {
-  const params = categoryId ? { categoryId } : undefined;
-  return makeTestApiCall("GET", `/admin/services?${new URLSearchParams(params).toString()}`
+  const params = categoryId ? { categoryId: categoryId.toString() } : undefined;
+  return makeTestApiCall(
+    "GET",
+    `/admin/services?${new URLSearchParams(params).toString()}`
   );
 }
 
@@ -208,15 +223,17 @@ export async function testGetServices(categoryId?: number) {
 export async function executeBatchCalls<T>(
   calls: Array<() => Promise<T>>,
   parallel: boolean = false
-): Promise<Array<{ success: boolean; data?: T; error?: any }>> {
-  const startTime = Date.now();
+): Promise<
+  Array<{ success: boolean; data?: T; error?: Record<string, unknown> }>
+> {
+  const startTime = new Date().getTime();
 
   try {
     if (parallel) {
       const results = await Promise.allSettled(calls.map((call) => call()));
       logger.info(`Batch API calls completed (parallel)`, {
         total: calls.length,
-        duration: `${Date.now() - startTime}ms`,
+        duration: `${new Date().getTime() - startTime}ms`,
       });
 
       return results.map((result) => {
@@ -227,20 +244,27 @@ export async function executeBatchCalls<T>(
         }
       });
     } else {
-      const results: Array<{ success: boolean; data?: T; error?: any }> = [];
+      const results: Array<{
+        success: boolean;
+        data?: T;
+        error?: Record<string, unknown>;
+      }> = [];
 
       for (const call of calls) {
         try {
           const data = await call();
           results.push({ success: true, data });
         } catch (error) {
-          results.push({ success: false, error });
+          results.push({
+            success: false,
+            error: error as Record<string, unknown> | undefined,
+          });
         }
       }
 
       logger.info(`Batch API calls completed (sequential)`, {
         total: calls.length,
-        duration: `${Date.now() - startTime}ms`,
+        duration: `${new Date().getTime() - startTime}ms`,
       });
 
       return results;

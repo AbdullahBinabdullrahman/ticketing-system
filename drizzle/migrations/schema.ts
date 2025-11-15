@@ -87,7 +87,6 @@ export const roles = pgTable(
   (table) => [unique("roles_name_key").on(table.name)]
 );
 
-// @ts-expect-error - Auto-generated schema with circular references
 export const users = pgTable(
   "users",
   {
@@ -126,9 +125,9 @@ export const users = pgTable(
     updatedById: integer("updated_by_id"),
     isActive: boolean("is_active").default(true),
     isDeleted: boolean("is_deleted").default(false),
-    // @ts-expect-error - Circular reference in foreign keys
   },
-  (table) => [
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (table): any[] => [
     index("idx_users_email")
       .using("btree", table.email.asc().nullsLast().op("text_ops"))
       .where(sql`(is_deleted = false)`),
@@ -352,7 +351,6 @@ export const customers = pgTable(
   ]
 );
 
-// @ts-expect-error - Auto-generated schema with circular references
 export const partners = pgTable(
   "partners",
   {
@@ -374,7 +372,6 @@ export const partners = pgTable(
     updatedById: integer("updated_by_id"),
     isActive: boolean("is_active").default(true),
     isDeleted: boolean("is_deleted").default(false),
-    // @ts-expect-error - Circular reference in foreign keys
   },
   (table) => [
     index("idx_partners_status")

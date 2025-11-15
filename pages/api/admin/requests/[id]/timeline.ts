@@ -38,16 +38,17 @@ export default async function handler(
 
     const requestNumber = req.query.id as string;
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     if (req.method === "GET") {
       // Get request timeline
-      const timeline = await requestService.getRequestTimeline(requestNumber);
+      const requestId = parseInt(requestNumber);
+      if (isNaN(requestId)) {
+        return sendErrorResponse(res, {
+          message: "Invalid request ID",
+          code: "VALIDATION_ERROR",
+          statusCode: 400,
+        });
+      }
+      const timeline = await requestService.getRequestTimeline(requestId);
 
       logger.apiResponse(
         req.method!,

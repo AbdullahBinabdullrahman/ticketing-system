@@ -1,7 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { authService } from "../../../lib/services/authService";
 import { db } from "../../../lib/db/connection";
-import { partners, branches, partnerCategories, categories, users } from "../../../lib/db/schema";
+import {
+  partners,
+  branches,
+  partnerCategories,
+  categories,
+  users,
+} from "../../../lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import {
   handleApiError,
@@ -54,13 +60,6 @@ export default async function handler(
     }
 
     const partnerId = userProfile.partnerId;
-
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
 
     if (req.method === "GET") {
       // Get partner details
@@ -128,12 +127,7 @@ export default async function handler(
           lastLoginAt: users.lastLoginAt,
         })
         .from(users)
-        .where(
-          and(
-            eq(users.partnerId, partnerId),
-            eq(users.isDeleted, false)
-          )
-        );
+        .where(and(eq(users.partnerId, partnerId), eq(users.isDeleted, false)));
 
       logger.apiResponse(
         req.method!,
@@ -186,4 +180,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

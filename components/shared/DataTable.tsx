@@ -43,7 +43,6 @@ interface DataTableProps<T> {
 export default function DataTable<T extends Record<string, unknown>>({
   columns,
   data,
-  keyField = "id",
   pagination,
   onSort,
   onRowClick,
@@ -58,8 +57,7 @@ export default function DataTable<T extends Record<string, unknown>>({
   const handleSort = (key: string) => {
     if (!onSort) return;
 
-    const newOrder =
-      sortKey === key && sortOrder === "asc" ? "desc" : "asc";
+    const newOrder = sortKey === key && sortOrder === "asc" ? "desc" : "asc";
     setSortKey(key);
     setSortOrder(newOrder);
     onSort(key, newOrder);
@@ -136,7 +134,9 @@ export default function DataTable<T extends Record<string, unknown>>({
                   key={column.key}
                   className={cn(
                     "px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider",
-                    column.sortable && onSort && "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700",
+                    column.sortable &&
+                      onSort &&
+                      "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700",
                     column.className
                   )}
                   onClick={() =>
@@ -169,7 +169,7 @@ export default function DataTable<T extends Record<string, unknown>>({
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
             {data.map((row, index) => (
               <tr
-                key={row[keyField] || index}
+                key={index}
                 onClick={() => onRowClick && onRowClick(row, index)}
                 className={cn(
                   onRowClick &&
@@ -197,7 +197,7 @@ export default function DataTable<T extends Record<string, unknown>>({
       <div className="md:hidden space-y-4">
         {data.map((row, index) => (
           <div
-            key={row[keyField] || index}
+            key={index}
             onClick={() => onRowClick && onRowClick(row, index)}
             className={cn(
               "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4",
@@ -206,7 +206,10 @@ export default function DataTable<T extends Record<string, unknown>>({
             )}
           >
             {columns.map((column) => (
-              <div key={column.key} className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+              <div
+                key={column.key}
+                className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+              >
                 <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                   {column.label}:
                 </span>
@@ -223,14 +226,20 @@ export default function DataTable<T extends Record<string, unknown>>({
       {pagination && pagination.totalPages > 1 && (
         <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 px-4 py-3">
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            {t("common.showing")} {(pagination.currentPage - 1) * pagination.pageSize + 1}-
-            {Math.min(pagination.currentPage * pagination.pageSize, pagination.total)}{" "}
+            {t("common.showing")}{" "}
+            {(pagination.currentPage - 1) * pagination.pageSize + 1}-
+            {Math.min(
+              pagination.currentPage * pagination.pageSize,
+              pagination.total
+            )}{" "}
             {t("common.of")} {pagination.total}
           </div>
           <div className="flex items-center gap-2">
             <button
               disabled={pagination.currentPage === 1}
-              onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
+              onClick={() =>
+                pagination.onPageChange(pagination.currentPage - 1)
+              }
               className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -241,7 +250,9 @@ export default function DataTable<T extends Record<string, unknown>>({
             </span>
             <button
               disabled={pagination.currentPage >= pagination.totalPages}
-              onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
+              onClick={() =>
+                pagination.onPageChange(pagination.currentPage + 1)
+              }
               className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
@@ -252,5 +263,3 @@ export default function DataTable<T extends Record<string, unknown>>({
     </div>
   );
 }
-
-

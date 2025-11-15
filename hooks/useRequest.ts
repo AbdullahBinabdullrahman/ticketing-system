@@ -18,7 +18,7 @@ export function useRequest(requestId: string | undefined) {
     isLoading,
     mutate,
   } = useSWR(requestId ? `/partner/requests/${requestId}` : null, fetcher, {
-    refreshInterval: 30000, // Refresh every 30 seconds
+    refreshInterval: 60000, // Refresh every 30 seconds
     revalidateOnFocus: true,
     revalidateOnReconnect: true,
   });
@@ -30,6 +30,3 @@ export function useRequest(requestId: string | undefined) {
     mutate,
   };
 }
-
-
-

@@ -119,7 +119,7 @@ export const cssVariables = {
  * Helper function to get color by path
  * @example getColor('accent.primary') // Returns '#FF6B35'
  */
-export function getColor(path: string): string {
+export function getColor(path: string): { [key: string]: string } | string {
   const parts = path.split(".");
   let current: Record<string, unknown> = colors as Record<string, unknown>;
 
@@ -131,7 +131,7 @@ export function getColor(path: string): string {
     current = current[part] as Record<string, unknown>;
   }
 
-  return current as string;
+  return current as { [key: string]: string };
 }
 
 /**

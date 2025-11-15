@@ -37,13 +37,6 @@ export default async function handler(
       });
     }
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     if (req.method === "GET") {
       // Get all requests with filters
       const filters = requestFiltersSchema.parse(req.query);

@@ -48,13 +48,6 @@ export default async function handler(
       });
     }
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     if (req.method === "GET") {
       // Get all services with optional filters
       const categoryId = req.query.categoryId
@@ -196,4 +189,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

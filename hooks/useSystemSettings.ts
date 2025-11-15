@@ -1,6 +1,6 @@
 /**
  * System Settings Hooks
- * 
+ *
  * Custom hooks for fetching and updating system configurations
  */
 
@@ -23,7 +23,7 @@ interface ConfigurationsResponse {
 export function useSystemSettings() {
   const { data, error, isLoading } = useSWR<ConfigurationsResponse>(
     "/admin/configurations",
-    (url) => http.get(url).then((res) => res.data.data) // Extract nested data property
+    (url: string) => http.get(url).then((res) => res.data.data) // Extract nested data property
   );
 
   // Helper to get specific config value
@@ -53,7 +53,7 @@ export function useSystemSettings() {
 export function useConfiguration(key: string) {
   const { data, error, isLoading } = useSWR<ConfigurationValue>(
     key ? `/admin/configurations/${key}` : null,
-    (url) => http.get(url).then((res) => res.data.data) // Extract nested data property
+    (url: string) => http.get(url).then((res) => res.data.data) // Extract nested data property
   );
 
   return {
@@ -86,19 +86,27 @@ export function useUpdateSettings() {
 
     try {
       const response = await http.post("/admin/configurations", input);
-      
+
       // Revalidate the configurations list
       await mutate("/admin/configurations");
       await mutate(`/admin/configurations/${input.key}`);
-      
+
       return response.data;
     } catch (error: unknown) {
       const errorMessage =
-        error && typeof error === 'object' && 'response' in error &&
-        error.response && typeof error.response === 'object' && 'data' in error.response &&
-        error.response.data && typeof error.response.data === 'object' && 'error' in error.response.data &&
-        error.response.data.error && typeof error.response.data.error === 'object' && 'message' in error.response.data.error &&
-        typeof error.response.data.error.message === 'string'
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response &&
+        error.response.data &&
+        typeof error.response.data === "object" &&
+        "error" in error.response.data &&
+        error.response.data.error &&
+        typeof error.response.data.error === "object" &&
+        "message" in error.response.data.error &&
+        typeof error.response.data.error.message === "string"
           ? error.response.data.error.message
           : "Failed to update configuration";
       setUpdateError(errorMessage);
@@ -117,23 +125,31 @@ export function useUpdateSettings() {
       const promises = inputs.map((input) =>
         http.post("/admin/configurations", input)
       );
-      
+
       const results = await Promise.all(promises);
-      
+
       // Revalidate all affected configurations
       await mutate("/admin/configurations");
       for (const input of inputs) {
         await mutate(`/admin/configurations/${input.key}`);
       }
-      
+
       return results.map((r) => r.data);
     } catch (error: unknown) {
       const errorMessage =
-        error && typeof error === 'object' && 'response' in error &&
-        error.response && typeof error.response === 'object' && 'data' in error.response &&
-        error.response.data && typeof error.response.data === 'object' && 'error' in error.response.data &&
-        error.response.data.error && typeof error.response.data.error === 'object' && 'message' in error.response.data.error &&
-        typeof error.response.data.error.message === 'string'
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response &&
+        error.response.data &&
+        typeof error.response.data === "object" &&
+        "error" in error.response.data &&
+        error.response.data.error &&
+        typeof error.response.data.error === "object" &&
+        "message" in error.response.data.error &&
+        typeof error.response.data.error.message === "string"
           ? error.response.data.error.message
           : "Failed to update configurations";
       setUpdateError(errorMessage);
@@ -149,17 +165,25 @@ export function useUpdateSettings() {
 
     try {
       await http.delete(`/admin/configurations/${key}`);
-      
+
       // Revalidate the configurations list
       await mutate("/admin/configurations");
       await mutate(`/admin/configurations/${key}`);
     } catch (error: unknown) {
       const errorMessage =
-        error && typeof error === 'object' && 'response' in error &&
-        error.response && typeof error.response === 'object' && 'data' in error.response &&
-        error.response.data && typeof error.response.data === 'object' && 'error' in error.response.data &&
-        error.response.data.error && typeof error.response.data.error === 'object' && 'message' in error.response.data.error &&
-        typeof error.response.data.error.message === 'string'
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response &&
+        error.response.data &&
+        typeof error.response.data === "object" &&
+        "error" in error.response.data &&
+        error.response.data.error &&
+        typeof error.response.data.error === "object" &&
+        "message" in error.response.data.error &&
+        typeof error.response.data.error.message === "string"
           ? error.response.data.error.message
           : "Failed to delete configuration";
       setUpdateError(errorMessage);
@@ -183,7 +207,7 @@ export function useUpdateSettings() {
  */
 export function useSlaSettings() {
   const { getConfigValue, getConfig, isLoading, isError } = useSystemSettings();
-  
+
   const slaTimeout = getConfigValue("sla_timeout_minutes");
   const operationalTeamEmails = getConfigValue("operational_team_emails");
   const adminEmails = getConfigValue("admin_notification_emails");
@@ -199,4 +223,3 @@ export function useSlaSettings() {
     isError,
   };
 }
-

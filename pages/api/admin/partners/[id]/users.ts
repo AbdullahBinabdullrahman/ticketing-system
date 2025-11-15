@@ -56,23 +56,11 @@ export default async function handler(
       });
     }
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     // Verify partner exists
     const partnerExists = await db
       .select()
       .from(partners)
-      .where(
-        and(
-          eq(partners.id, partnerId),
-          eq(partners.isDeleted, false)
-        )
-      )
+      .where(and(eq(partners.id, partnerId), eq(partners.isDeleted, false)))
       .limit(1);
 
     if (partnerExists.length === 0) {
@@ -130,4 +118,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

@@ -30,13 +30,6 @@ export default async function handler(
     const token = authHeader.substring(7);
     const { userId } = await authService.verifyToken(token);
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     if (req.method === "POST") {
       // Create new request
       const validatedData = createRequestSchema.parse(req.body);

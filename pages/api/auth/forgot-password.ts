@@ -9,6 +9,29 @@ import {
 } from "../../../lib/utils/errorHandler";
 import { logger } from "../../../lib/utils/logger";
 
+const resolveApplicationUrl = (req: NextApiRequest): string => {
+  const defaultUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  if (req.headers.origin) {
+    return req.headers.origin;
+  }
+
+  const forwardedProto = (req.headers["x-forwarded-proto"] as string)?.split(
+    ","
+  )[0];
+  const forwardedHost = req.headers["x-forwarded-host"] as string | undefined;
+  if (forwardedHost) {
+    return `${forwardedProto || "https"}://${forwardedHost}`;
+  }
+
+  if (req.headers.host) {
+    const socket = req.socket as typeof req.socket & { encrypted?: boolean };
+    const protocol = forwardedProto || (socket.encrypted ? "https" : "http");
+    return `${protocol}://${req.headers.host}`;
+  }
+
+  return defaultUrl;
+};
+
 /**
  * Forgot Password API Handler
  * POST /api/auth/forgot-password - Request password reset link
@@ -31,13 +54,6 @@ export default async function handler(
     // Validate request body
     const validatedData = forgotPasswordSchema.parse(req.body);
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      undefined,
-      req.headers["x-request-id"] as string
-    );
-
     // Generate reset token (returns empty string if user doesn't exist)
     const resetToken = await authService.generatePasswordResetToken(
       validatedData.email
@@ -46,9 +62,9 @@ export default async function handler(
     // Only send email if token was generated (user exists)
     if (resetToken) {
       // Generate reset URL
-      const resetUrl = `${
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-      }/partner/reset-password?token=${resetToken}`;
+      const resetUrl = `${resolveApplicationUrl(
+        req
+      )}/partner/reset-password?token=${resetToken}`;
 
       // Send password reset email (fire and forget - don't block response)
       emailService

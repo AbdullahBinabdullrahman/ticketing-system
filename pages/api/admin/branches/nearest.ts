@@ -1,12 +1,12 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { partnerService } from "../../../lib/services/partnerService";
-import { authService } from "../../../lib/services/authService";
+import { partnerService } from "../../../../lib/services/partnerService";
+import { authService } from "../../../../lib/services/authService";
 import {
   handleApiError,
   sendSuccessResponse,
   sendErrorResponse,
-} from "../../../lib/utils/errorHandler";
-import { logger } from "../../../lib/utils/logger";
+} from "../../../../lib/utils/errorHandler";
+import { logger } from "../../../../lib/utils/logger";
 
 export default async function handler(
   req: NextApiRequest,
@@ -61,6 +61,7 @@ export default async function handler(
     logger.apiRequest(
       req.method!,
       req.url!,
+      { query: req.query },
       userId,
       req.headers["x-request-id"] as string
     );

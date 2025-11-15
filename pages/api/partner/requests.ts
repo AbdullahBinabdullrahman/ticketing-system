@@ -23,14 +23,6 @@ export default async function handler(
     await requirePermission(req as AuthenticatedRequest, res, "request_view");
 
     const userId = (req as AuthenticatedRequest).userId!;
-    const userProfile = (req as AuthenticatedRequest).user!;
-
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
 
     if (req.method === "GET") {
       // Get partner's requests

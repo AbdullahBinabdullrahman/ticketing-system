@@ -107,17 +107,15 @@ export function generateRequest(
  * Generate a partner
  */
 export function generatePartner(
-  name: string,
-  categoryIds: number[],
-  pickupOptionIds: number[]
+  name: string
+  // categoryIds: number[],
+  // pickupOptionIds: number[]
 ): CreatePartnerInput {
   return {
     name,
     status: "active",
     contactEmail: `contact@${name.toLowerCase().replace(/\s+/g, "")}.com`,
     contactPhone: `+9665${Math.floor(Math.random() * 100000000)}`,
-    categoryIds,
-    pickupOptionIds,
   };
 }
 

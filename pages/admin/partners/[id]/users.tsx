@@ -112,9 +112,7 @@ export default function PartnerUsersPage() {
         toast.success(
           <div>
             <p className="font-semibold">{t("users.userCreated")}</p>
-            <p className="text-xs mt-1">
-              {t("users.passwordDisplayed")}
-            </p>
+            <p className="text-xs mt-1">{t("users.passwordDisplayed")}</p>
           </div>,
           { duration: 5000 }
         );
@@ -123,9 +121,12 @@ export default function PartnerUsersPage() {
         setIsAddingUser(false);
         resetForm();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorObject = error as {
+        response?: { data?: { error?: { message?: string } } };
+      };
       toast.error(
-        error.response?.data?.error?.message || t("errors.generic")
+        errorObject.response?.data?.error?.message || t("errors.generic")
       );
     } finally {
       setIsSubmitting(false);
@@ -204,7 +205,7 @@ export default function PartnerUsersPage() {
             </h2>
             <button
               onClick={() => router.push("/admin/partners")}
-              className="px-4 py-2 rounded-lg transition-colors bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+              className="px-4 py-2 rounded-lg transition-colors  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
             >
               {t("partners.backToList")}
             </button>
@@ -244,7 +245,7 @@ export default function PartnerUsersPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setIsAddingUser(true)}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
               >
                 <Plus className="h-5 w-5" />
                 {t("users.addUser")}
@@ -255,10 +256,7 @@ export default function PartnerUsersPage() {
           {/* Users List */}
           <BlurFade delay={0.2}>
             {partnerUsers.length === 0 ? (
-              <MagicCard
-                className="p-12 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 text-center"
-                gradientColor="#d1d5db"
-              >
+              <MagicCard className="p-12 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 text-center">
                 <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   {t("users.noUsers")}
@@ -268,7 +266,7 @@ export default function PartnerUsersPage() {
                 </p>
                 <button
                   onClick={() => setIsAddingUser(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
                 >
                   <Plus className="h-5 w-5" />
                   {t("users.addFirstUser")}
@@ -278,10 +276,7 @@ export default function PartnerUsersPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {partnerUsers.map((user) => (
                   <BlurFade key={user.id} delay={0.3}>
-                    <MagicCard
-                      className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 transition-shadow"
-                      gradientColor="#d1d5db"
-                    >
+                    <MagicCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 transition-shadow">
                       {/* User Header */}
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
@@ -353,7 +348,8 @@ export default function PartnerUsersPage() {
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                           <Clock className="h-4 w-4" />
                           <span>
-                            {t("users.lastLogin")}: {formatDate(user.lastLoginAt)}
+                            {t("users.lastLogin")}:{" "}
+                            {formatDate(user.lastLoginAt)}
                           </span>
                         </div>
 
@@ -395,7 +391,9 @@ export default function PartnerUsersPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => !isSubmitting && !createdPassword && handleCloseModal()}
+            onClick={() =>
+              !isSubmitting && !createdPassword && handleCloseModal()
+            }
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -406,7 +404,9 @@ export default function PartnerUsersPage() {
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {createdPassword ? t("users.userCreatedTitle") : t("users.addUser")}
+                  {createdPassword
+                    ? t("users.userCreatedTitle")
+                    : t("users.addUser")}
                 </h2>
               </div>
 
@@ -445,7 +445,11 @@ export default function PartnerUsersPage() {
                       </label>
                       <div className="relative">
                         <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                          <p className={`text-sm font-mono text-amber-900 dark:text-amber-100 break-all ${!showPassword ? "blur-sm" : ""}`}>
+                          <p
+                            className={`text-sm font-mono text-amber-900 dark:text-amber-100 break-all ${
+                              !showPassword ? "blur-sm" : ""
+                            }`}
+                          >
                             {createdPassword}
                           </p>
                         </div>
@@ -485,7 +489,7 @@ export default function PartnerUsersPage() {
 
                   <button
                     onClick={handleCloseModal}
-                    className="w-full px-6 py-3 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                    className="w-full px-6 py-3 rounded-xl font-semibold transition-all duration-200  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
                   >
                     {t("common.close")}
                   </button>
@@ -501,7 +505,9 @@ export default function PartnerUsersPage() {
                     <input
                       type="text"
                       value={formData.name}
-                      onChange={(e) => handleInputChange("name", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("name", e.target.value)
+                      }
                       className={`w-full px-4 py-3 rounded-lg border-2 transition-all ${
                         errors.name
                           ? "border-red-500"
@@ -522,7 +528,9 @@ export default function PartnerUsersPage() {
                     <input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("email", e.target.value)
+                      }
                       className={`w-full px-4 py-3 rounded-lg border-2 transition-all ${
                         errors.email
                           ? "border-red-500"
@@ -531,7 +539,9 @@ export default function PartnerUsersPage() {
                       placeholder={t("users.emailPlaceholder")}
                     />
                     {errors.email && (
-                      <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+                      <p className="text-xs text-red-500 mt-1">
+                        {errors.email}
+                      </p>
                     )}
                   </div>
 
@@ -543,7 +553,9 @@ export default function PartnerUsersPage() {
                     <input
                       type="tel"
                       value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("phone", e.target.value)
+                      }
                       className={`w-full px-4 py-3 rounded-lg border-2 transition-all ${
                         errors.phone
                           ? "border-red-500"
@@ -552,7 +564,9 @@ export default function PartnerUsersPage() {
                       placeholder={t("users.phonePlaceholder")}
                     />
                     {errors.phone && (
-                      <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+                      <p className="text-xs text-red-500 mt-1">
+                        {errors.phone}
+                      </p>
                     )}
                   </div>
 
@@ -606,7 +620,7 @@ export default function PartnerUsersPage() {
                       whileTap={{ scale: 0.98 }}
                       onClick={handleAddUser}
                       disabled={isSubmitting}
-                      className="px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
                         <>
@@ -630,4 +644,3 @@ export default function PartnerUsersPage() {
     </AdminLayout>
   );
 }
-

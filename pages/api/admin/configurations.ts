@@ -50,13 +50,6 @@ export default async function handler(
       });
     }
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     if (req.method === "GET") {
       // Get all global configurations
       const configurations = await configurationService.getAllGlobalConfigs();
@@ -85,7 +78,9 @@ export default async function handler(
           message: "Validation error",
           code: "VALIDATION_ERROR",
           statusCode: 400,
-          details: basicValidation.error.errors,
+          details: {
+            message: basicValidation.error.message,
+          },
         });
       }
 
@@ -99,7 +94,9 @@ export default async function handler(
             message: "SLA timeout validation error",
             code: "VALIDATION_ERROR",
             statusCode: 400,
-            details: result.error.errors,
+            details: {
+              message: result.error.message,
+            },
           });
         }
         validatedData = result.data;
@@ -113,7 +110,9 @@ export default async function handler(
             message: "Email configuration validation error",
             code: "VALIDATION_ERROR",
             statusCode: 400,
-            details: result.error.errors,
+            details: {
+              message: result.error.message,
+            },
           });
         }
         validatedData = result.data;

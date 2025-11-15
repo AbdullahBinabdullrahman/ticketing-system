@@ -5,7 +5,7 @@
 
 import bcrypt from "bcryptjs";
 import { db } from "../db/connection";
-import { users, roles } from "../db/schema";
+import { users, roles, NewUser } from "../db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import emailService from "../../services/emailService";
 import { logger } from "../utils/logger";
@@ -28,6 +28,10 @@ export interface CreateAdminUserResult {
     email: string;
     roleId: number;
     userType: string;
+    languagePreference: string;
+    roleName: string;
+    isActive: boolean;
+    phone?: string | null;
     createdAt: Date | null;
   };
   temporaryPassword?: string; // Only set if password was auto-generated
@@ -58,9 +62,7 @@ function generateSecurePassword(): string {
   ];
 
   // Shuffle the password
-  return password
-    .sort(() => Math.random() - 0.5)
-    .join("");
+  return password.sort(() => Math.random() - 0.5).join("");
 }
 
 /**
@@ -128,7 +130,7 @@ export async function createAdminUser(
         isDeleted: false,
         emailVerifiedAt: new Date(), // Auto-verify for admin users
         createdAt: new Date(),
-      } as any)
+      } as NewUser)
       .returning();
 
     // 6. Send welcome email if requested (only if password was auto-generated)
@@ -170,8 +172,8 @@ export async function createAdminUser(
         roleId: newUser[0].roleId,
         roleName: role[0].name,
         userType: newUser[0].userType,
-        languagePreference: newUser[0].languagePreference,
-        isActive: newUser[0].isActive,
+        languagePreference: newUser[0].languagePreference || "ar",
+        isActive: newUser[0].isActive || true,
         createdAt: newUser[0].createdAt,
       },
       temporaryPassword: wasPasswordGenerated ? tempPassword : undefined, // Only set if auto-generated
@@ -191,7 +193,7 @@ export async function createAdminUser(
 export async function getAdminUsers() {
   try {
     const { partners } = await import("../db/schema");
-    
+
     const allUsers = await db
       .select({
         id: users.id,
@@ -262,12 +264,7 @@ export async function updateAdminUser(
       const emailExists = await db
         .select()
         .from(users)
-        .where(
-          and(
-            eq(users.email, updates.email),
-            eq(users.isDeleted, false)
-          )
-        )
+        .where(and(eq(users.email, updates.email), eq(users.isDeleted, false)))
         .limit(1);
 
       if (emailExists.length > 0) {
@@ -283,7 +280,7 @@ export async function updateAdminUser(
       .set({
         ...updates,
         updatedAt: new Date(),
-      } as any)
+      } as NewUser)
       .where(eq(users.id, userId))
       .returning();
 
@@ -313,7 +310,7 @@ export async function deleteAdminUser(userId: number) {
         isDeleted: true,
         isActive: false,
         updatedAt: new Date(),
-      } as any)
+      } as NewUser)
       .where(
         and(
           eq(users.id, userId),
@@ -351,9 +348,7 @@ export async function getAdminRoles() {
     const adminRoles = await db
       .select()
       .from(roles)
-      .where(
-        sql`${roles.name} IN ('admin', 'operational')`
-      );
+      .where(sql`${roles.name} IN ('admin', 'operational')`);
 
     return adminRoles;
   } catch (error) {
@@ -361,4 +356,3 @@ export async function getAdminRoles() {
     throw error;
   }
 }
-

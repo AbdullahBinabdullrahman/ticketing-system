@@ -30,7 +30,7 @@ export function useRequests(filters?: RequestFiltersInput) {
     filters ? `/admin/requests?${queryParams.toString()}` : null,
     fetcher,
     {
-      refreshInterval: 30000, // Auto-refresh every 30 seconds
+      refreshInterval: 60000, // Auto-refresh every 30 seconds
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
     }
@@ -49,10 +49,9 @@ export function useRequests(filters?: RequestFiltersInput) {
  * Hook to fetch a single request by ID
  */
 export function useRequest(requestId: number | null) {
-  const { data, error, mutate, isLoading } = useSWR<{ request: RequestResponse }>(
-    requestId ? `/admin/requests/${requestId}` : null,
-    fetcher
-  );
+  const { data, error, mutate, isLoading } = useSWR<{
+    request: RequestResponse;
+  }>(requestId ? `/admin/requests/${requestId}` : null, fetcher);
 
   return {
     request: data?.request,
@@ -82,7 +81,7 @@ export async function useUpdateRequestStatus() {
     rejectionReason?: string
   ) => {
     return requestsApi.updateRequestStatus(requestId, {
-      status: status as "submitted" | "unassigned" | "assigned" | "confirmed" | "in_progress" | "completed" | "closed" | "rejected",
+      status: status as "confirmed" | "in_progress" | "completed" | "rejected",
       notes,
       rejectionReason,
     });

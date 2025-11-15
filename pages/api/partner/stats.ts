@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { authService } from "../../../lib/services/authService";
 import { db } from "../../../lib/db/connection";
-import { requests, partners } from "../../../lib/db/schema";
+import { requests } from "../../../lib/db/schema";
 import { eq, and, sql, count } from "drizzle-orm";
 import {
   handleApiError,
@@ -48,22 +48,12 @@ export default async function handler(
 
     const partnerId = userProfile.partnerId;
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     // Get total requests assigned to this partner
     const totalRequestsResult = await db
       .select({ count: count() })
       .from(requests)
       .where(
-        and(
-          eq(requests.partnerId, partnerId),
-          eq(requests.isDeleted, false)
-        )
+        and(eq(requests.partnerId, partnerId), eq(requests.isDeleted, false))
       );
 
     const totalRequests = totalRequestsResult[0]?.count || 0;
@@ -156,21 +146,15 @@ export default async function handler(
         )
       );
 
-    const avgRating = Number(
-      (avgRatingResult[0]?.avgRating || 0).toFixed(1)
-    );
+    const avgRating = Number((avgRatingResult[0]?.avgRating || 0).toFixed(1));
 
     // Calculate completion rate
     const completionRate =
-      totalRequests > 0
-        ? Math.round((completed / totalRequests) * 100)
-        : 0;
+      totalRequests > 0 ? Math.round((completed / totalRequests) * 100) : 0;
 
     // Calculate rejection rate
     const rejectionRate =
-      totalRequests > 0
-        ? Math.round((rejected / totalRequests) * 100)
-        : 0;
+      totalRequests > 0 ? Math.round((rejected / totalRequests) * 100) : 0;
 
     logger.apiResponse(
       req.method!,
@@ -202,4 +186,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

@@ -1,6 +1,5 @@
 "use client";
 
-import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "next/router";
 import AdminLayout from "../../../components/layout/AdminLayout";
@@ -19,8 +18,6 @@ import {
   Award,
   Plus,
   Edit,
-  Trash2,
-  Loader2,
   Info,
   CheckCircle2,
   UserPlus,
@@ -35,7 +32,8 @@ export default function PartnerDetailPage() {
   const partnerId = id ? parseInt(id as string) : null;
 
   const { partner, isLoading, isError } = usePartner(partnerId);
-  const { users: partnerUsers, isLoading: usersLoading } = useAdminPartnerUsers(partnerId);
+  const { users: partnerUsers, isLoading: usersLoading } =
+    useAdminPartnerUsers(partnerId);
 
   if (isLoading) {
     return (
@@ -221,7 +219,6 @@ export default function PartnerDetailPage() {
                     onClick={() =>
                       router.push(`/admin/partners/${partnerId}/branches/new`)
                     }
-                    size="sm"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     {t("branches.newBranch")}
@@ -305,7 +302,8 @@ export default function PartnerDetailPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Users className="h-5 w-5 text-primary-500" />
-                    {t("users.title")} ({usersLoading ? "..." : partnerUsers.length})
+                    {t("users.title")} (
+                    {usersLoading ? "..." : partnerUsers.length})
                   </h2>
                   <button
                     onClick={() =>
@@ -325,7 +323,11 @@ export default function PartnerDetailPage() {
                         <p className="text-sm font-medium text-indigo-900 dark:text-indigo-200">
                           {partnerUsers.length === 0
                             ? t("users.noUsers")
-                            : `${partnerUsers.length} ${t("common.active")} ${partnerUsers.length === 1 ? t("users.user") : t("users.users")}`}
+                            : `${partnerUsers.length} ${t("common.active")} ${
+                                partnerUsers.length === 1
+                                  ? t("users.user")
+                                  : t("users.users")
+                              }`}
                         </p>
                         <p className="text-xs text-indigo-700 dark:text-indigo-300 mt-1">
                           {t("users.manageAccessAndPermissions")}
@@ -336,7 +338,6 @@ export default function PartnerDetailPage() {
                       onClick={() =>
                         router.push(`/admin/partners/${partnerId}/users`)
                       }
-                      size="sm"
                       className="shrink-0"
                     >
                       <Plus className="h-4 w-4 mr-2" />
@@ -347,7 +348,8 @@ export default function PartnerDetailPage() {
                     <div className="mt-3 pt-3 border-t border-indigo-200 dark:border-indigo-800">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-indigo-700 dark:text-indigo-300">
-                          {t("users.activeUsers")}: {partnerUsers.filter(u => u.isActive).length}
+                          {t("users.activeUsers")}:{" "}
+                          {partnerUsers.filter((u) => u.isActive).length}
                         </span>
                         <button
                           onClick={() =>
@@ -368,7 +370,7 @@ export default function PartnerDetailPage() {
           {/* Sidebar - Stats */}
           <div className="space-y-6">
             {/* Partner Logo */}
-            {partner.logoUrl && partner.logoUrl.startsWith('http') && (
+            {partner.logoUrl && partner.logoUrl.startsWith("http") && (
               <BlurFade delay={0.2}>
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
@@ -388,7 +390,7 @@ export default function PartnerDetailPage() {
 
             {/* Performance Stats */}
             <BlurFade delay={0.3}>
-              <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-lg shadow-sm border border-primary-200 dark:border-primary-700 p-6">
+              <div className=" from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-lg shadow-sm border border-primary-200 dark:border-primary-700 p-6">
                 <h3 className="text-sm font-semibold text-primary-900 dark:text-primary-100 mb-4 uppercase tracking-wide">
                   {t("partners.performance")}
                 </h3>
@@ -467,4 +469,3 @@ export default function PartnerDetailPage() {
     </AdminLayout>
   );
 }
-

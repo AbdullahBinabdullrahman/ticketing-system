@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { loginSchema } from "../../../schemas/auth";
+
 import { authService } from "../../../lib/services/authService";
 import {
   handleApiError,
@@ -17,13 +17,6 @@ export default async function handler(
   }
 
   try {
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      undefined,
-      req.headers["x-request-id"] as string
-    );
-
     // Validate request body
     const validatedData = req.body;
 

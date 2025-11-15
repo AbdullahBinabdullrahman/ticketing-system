@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/lib/db/connection";
-import { users } from "@/lib/db/schema";
+import { NewUser, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { authService } from "@/lib/services/authService";
 import bcrypt from "bcryptjs";
@@ -15,7 +15,7 @@ import {
  * Generate Test Customer Token
  * Creates or retrieves a test customer user and returns a valid token
  * This endpoint is for TESTING ONLY and requires a secret key
- * 
+ *
  * @requires X-Test-Secret header matching JWT_SECRET
  */
 export default async function handler(
@@ -59,11 +59,7 @@ export default async function handler(
       .select()
       .from(users)
       .where(
-        and(
-          eq(users.email, TEST_CUSTOMER_EMAIL),
-          sql`${users.userType} = 'customer'::user_type_enum`,
-          eq(users.isDeleted, false)
-        )
+        and(eq(users.email, TEST_CUSTOMER_EMAIL), eq(users.isDeleted, false))
       )
       .limit(1);
 
@@ -91,7 +87,7 @@ export default async function handler(
           emailVerifiedAt: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
-        } as any)
+        } as unknown as NewUser)
         .returning();
 
       customerId = newCustomer[0].id;
@@ -102,21 +98,24 @@ export default async function handler(
     }
 
     // Generate token for the customer
-    const token = await authService.generateToken(customerId);
+    if (customerId) {
+      const tokens = await authService.generateTokens(customerId);
 
-    logger.info("Test customer token generated", { customerId });
+      logger.info("Test customer token generated", { customerId });
 
-    return sendSuccessResponse(res, {
-      token,
-      user: {
-        id: customerId,
-        name: "Test Customer",
-        email: TEST_CUSTOMER_EMAIL,
-        userType: "customer",
-      },
-      message:
-        "Test customer token generated. This is for TESTING purposes only.",
-    });
+      return sendSuccessResponse(res, {
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: {
+          id: customerId,
+          name: "Test Customer",
+          email: TEST_CUSTOMER_EMAIL,
+          userType: "customer",
+        },
+        message:
+          "Test customer token generated. This is for TESTING purposes only.",
+      });
+    }
   } catch (error) {
     const apiError = handleApiError(error);
     logger.error("Failed to generate test customer token", {
@@ -125,4 +124,3 @@ export default async function handler(
     return sendErrorResponse(res, apiError);
   }
 }
-

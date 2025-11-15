@@ -35,13 +35,8 @@ export default function AdminServicesPage() {
   >(undefined);
 
   const { categories } = useCategories();
-  const {
-    services,
-    isLoading,
-    createService,
-    updateService,
-    deleteService,
-  } = useServices(selectedCategoryFilter, search);
+  const { services, isLoading, createService, updateService, deleteService } =
+    useServices(selectedCategoryFilter, search);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -97,7 +92,9 @@ export default function AdminServicesPage() {
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData({
@@ -110,7 +107,9 @@ export default function AdminServicesPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error(t("services.serviceNameRequired", "Service name is required"));
+      toast.error(
+        t("services.serviceNameRequired", "Service name is required")
+      );
       return;
     }
 
@@ -129,8 +128,11 @@ export default function AdminServicesPage() {
         toast.success(t("services.serviceCreated"));
       }
       handleCloseModal();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || t("errors.generic"));
+    } catch (error: unknown) {
+      const errorObject = error as {
+        response?: { data?: { message?: string } };
+      };
+      toast.error(errorObject.response?.data?.message || t("errors.generic"));
     } finally {
       setIsSubmitting(false);
     }
@@ -144,8 +146,11 @@ export default function AdminServicesPage() {
     try {
       await deleteService(id);
       toast.success(t("services.serviceDeleted"));
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || t("errors.generic"));
+    } catch (error: unknown) {
+      const errorObject = error as {
+        response?: { data?: { message?: string } };
+      };
+      toast.error(errorObject.response?.data?.message || t("errors.generic"));
     }
   };
 
@@ -193,7 +198,7 @@ export default function AdminServicesPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleOpenModal()}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl"
               >
                 <Plus className="h-5 w-5" />
                 {t("services.newService")}
@@ -254,10 +259,7 @@ export default function AdminServicesPage() {
           {/* Services Grid */}
           {services.length === 0 ? (
             <BlurFade delay={0.3}>
-              <MagicCard
-                className="p-12 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 text-center"
-                gradientColor="#d1d5db"
-              >
+              <MagicCard className="p-12 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 text-center">
                 <Wrench className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   {search || selectedCategoryFilter
@@ -272,7 +274,7 @@ export default function AdminServicesPage() {
                 {!search && !selectedCategoryFilter && (
                   <button
                     onClick={() => handleOpenModal()}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
                   >
                     <Plus className="h-5 w-5" />
                     {t("services.createFirst")}
@@ -284,10 +286,7 @@ export default function AdminServicesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {services.map((service, index) => (
                 <BlurFade key={service.id} delay={0.3 + index * 0.05}>
-                  <MagicCard
-                    className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow"
-                    gradientColor="#d1d5db"
-                  >
+                  <MagicCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3 flex-1">
                         {service.iconUrl && (
@@ -509,7 +508,7 @@ export default function AdminServicesPage() {
                     whileTap={{ scale: 0.98 }}
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
                       <>
@@ -520,7 +519,9 @@ export default function AdminServicesPage() {
                       </>
                     ) : (
                       <>
-                        {editingService ? t("common.update") : t("common.create")}
+                        {editingService
+                          ? t("common.update")
+                          : t("common.create")}
                       </>
                     )}
                   </motion.button>

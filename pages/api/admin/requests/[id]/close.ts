@@ -36,13 +36,6 @@ export default async function handler(
       });
     }
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     // Close request
     const result = await requestService.closeRequest(requestId, userId);
 

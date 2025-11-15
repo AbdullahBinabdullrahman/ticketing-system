@@ -64,10 +64,11 @@ export default function PartnerCategoriesPage() {
       toast.success(t("success.assigned"));
       setIsAddingCategory(false);
       setSelectedCategoryId(null);
-    } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || t("errors.generic")
-      );
+    } catch (error: unknown) {
+      const errorObject = error as {
+        response?: { data?: { message?: string } };
+      };
+      toast.error(errorObject.response?.data?.message || t("errors.generic"));
     } finally {
       setIsSubmitting(false);
     }
@@ -81,10 +82,11 @@ export default function PartnerCategoriesPage() {
     try {
       await removeCategory(categoryId);
       toast.success(t("success.deleted"));
-    } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || t("errors.generic")
-      );
+    } catch (error: unknown) {
+      const errorObject = error as {
+        response?: { data?: { message?: string } };
+      };
+      toast.error(errorObject.response?.data?.message || t("errors.generic"));
     }
   };
 
@@ -124,7 +126,7 @@ export default function PartnerCategoriesPage() {
             </h2>
             <button
               onClick={() => router.push("/admin/partners")}
-              className="px-4 py-2 rounded-lg transition-colors bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+              className="px-4 py-2 rounded-lg transition-colors  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
             >
               {t("partners.backToList")}
             </button>
@@ -164,7 +166,7 @@ export default function PartnerCategoriesPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setIsAddingCategory(true)}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl"
               >
                 <Plus className="h-5 w-5" />
                 {t("categories.assignCategory")}
@@ -175,10 +177,7 @@ export default function PartnerCategoriesPage() {
           {/* Assigned Categories */}
           <BlurFade delay={0.2}>
             {partnerCategories.length === 0 ? (
-              <MagicCard
-                className="p-12 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 text-center"
-                gradientColor="#d1d5db"
-              >
+              <MagicCard className="p-12 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 text-center">
                 <Tag className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   {t("categories.noCategories")}
@@ -188,7 +187,7 @@ export default function PartnerCategoriesPage() {
                 </p>
                 <button
                   onClick={() => setIsAddingCategory(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
                 >
                   <Plus className="h-5 w-5" />
                   {t("categories.assignFirst")}
@@ -198,10 +197,7 @@ export default function PartnerCategoriesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {partnerCategories.map((category) => (
                   <BlurFade key={category.id} delay={0.3}>
-                    <MagicCard
-                      className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow"
-                      gradientColor="#d1d5db"
-                    >
+                    <MagicCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
                           {category.categoryIcon && (
@@ -303,8 +299,10 @@ export default function PartnerCategoriesPage() {
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            {category.icon && (
-                              <span className="text-2xl">{category.icon}</span>
+                            {category.iconUrl && (
+                              <span className="text-2xl">
+                                {category.iconUrl}
+                              </span>
                             )}
                             <div>
                               <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -335,7 +333,7 @@ export default function PartnerCategoriesPage() {
                       whileTap={{ scale: 0.98 }}
                       onClick={handleAssignCategory}
                       disabled={!selectedCategoryId || isSubmitting}
-                      className="px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2  from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
                         <>
@@ -359,4 +357,3 @@ export default function PartnerCategoriesPage() {
     </AdminLayout>
   );
 }
-

@@ -1,4 +1,3 @@
-import { apiClient } from "./client";
 import type {
   CreatePartnerWithUserInput,
   UpdatePartnerInput,
@@ -7,6 +6,7 @@ import type {
   CreateBranchInput,
   UpdateBranchInput,
 } from "../../schemas/partners";
+import http from "../utils/http";
 
 export interface PartnerResponse {
   id: number;
@@ -20,6 +20,7 @@ export interface PartnerResponse {
   branchesCount?: number;
   categoriesCount?: number;
   completedRequestsCount?: number;
+  requestsCount?: number;
   averageRating?: number;
 }
 
@@ -72,7 +73,7 @@ export interface NearestBranchResponse {
 export async function getPartners(
   filters: PartnerFiltersInput
 ): Promise<PaginatedPartnersResponse> {
-  const response = await apiClient.get("/admin/partners", { params: filters });
+  const response = await http.get("/admin/partners", { params: filters });
   return response.data;
 }
 
@@ -80,20 +81,18 @@ export async function getPartners(
  * Get a single partner by ID
  */
 export async function getPartner(partnerId: number): Promise<PartnerResponse> {
-  const response = await apiClient.get(`/admin/partners/${partnerId}`);
+  const response = await http.get(`/admin/partners/${partnerId}`);
   return response.data;
 }
 
 /**
  * Create a new partner with initial user account
  */
-export async function createPartner(
-  data: CreatePartnerWithUserInput
-): Promise<{
+export async function createPartner(data: CreatePartnerWithUserInput): Promise<{
   partner: PartnerResponse;
   user: { id: number; email: string; temporaryPassword?: string };
 }> {
-  const response = await apiClient.post("/admin/partners", data);
+  const response = await http.post("/admin/partners", data);
   return response.data;
 }
 
@@ -104,7 +103,7 @@ export async function updatePartner(
   partnerId: number,
   data: UpdatePartnerInput
 ): Promise<PartnerResponse> {
-  const response = await apiClient.patch(`/admin/partners/${partnerId}`, data);
+  const response = await http.patch(`/admin/partners/${partnerId}`, data);
   return response.data;
 }
 
@@ -112,7 +111,8 @@ export async function updatePartner(
  * Delete a partner
  */
 export async function deletePartner(partnerId: number): Promise<void> {
-  await apiClient.delete(`/admin/partners/${partnerId}`);
+  const response = await http.delete(`/admin/partners/${partnerId}`);
+  return response.data;
 }
 
 /**
@@ -121,7 +121,7 @@ export async function deletePartner(partnerId: number): Promise<void> {
 export async function getBranches(
   filters: BranchFiltersInput
 ): Promise<PaginatedBranchesResponse> {
-  const response = await apiClient.get("/admin/branches", { params: filters });
+  const response = await http.get("/admin/branches", { params: filters });
   return response.data;
 }
 
@@ -138,15 +138,17 @@ export async function findNearestBranch(
   if (categoryId) params.categoryId = categoryId;
   if (partnerId) params.partnerId = partnerId;
 
-  const response = await apiClient.get("/admin/branches/nearest", { params });
+  const response = await http.get("/admin/branches/nearest", { params });
   return response.data;
 }
 
 /**
  * Create a new branch
  */
-export async function createBranch(data: CreateBranchInput): Promise<BranchResponse> {
-  const response = await apiClient.post("/admin/branches", data);
+export async function createBranch(
+  data: CreateBranchInput
+): Promise<BranchResponse> {
+  const response = await http.post("/admin/branches", data);
   return response.data;
 }
 
@@ -157,7 +159,7 @@ export async function updateBranch(
   branchId: number,
   data: UpdateBranchInput
 ): Promise<BranchResponse> {
-  const response = await apiClient.patch(`/admin/branches/${branchId}`, data);
+  const response = await http.patch(`/admin/branches/${branchId}`, data);
   return response.data;
 }
 
@@ -165,7 +167,8 @@ export async function updateBranch(
  * Delete a branch
  */
 export async function deleteBranch(branchId: number): Promise<void> {
-  await apiClient.delete(`/admin/branches/${branchId}`);
+  const response = await http.delete(`/admin/branches/${branchId}`);
+  return response.data;
 }
 
 export const partnersApi = {
@@ -180,4 +183,3 @@ export const partnersApi = {
   updateBranch,
   deleteBranch,
 };
-

@@ -16,13 +16,6 @@ export default async function handler(
   }
 
   try {
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      undefined,
-      req.headers["x-request-id"] as string
-    );
-
     // Get authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {

@@ -47,14 +47,6 @@ export default async function handler(
       });
     }
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      { userId },
-      undefined,
-      req.headers["x-request-id"] as string
-    );
-
     // Calculate date ranges
     const now = new Date();
     const todayStart = new Date(

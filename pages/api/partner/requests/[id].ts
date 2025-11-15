@@ -72,13 +72,6 @@ export default async function handler(
       });
     }
 
-    logger.apiRequest(
-      req.method!,
-      req.url!,
-      userId,
-      req.headers["x-request-id"] as string
-    );
-
     // Build where conditions based on ID type
     const whereConditions = [
       eq(requests.partnerId, partnerId),
