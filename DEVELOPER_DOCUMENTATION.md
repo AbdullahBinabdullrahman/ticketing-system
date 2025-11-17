@@ -321,20 +321,13 @@ npm install
 
 3. **Set up environment variables**
 
-```bash
-cp .env.example .env.local
-```
 
-Edit `.env.local` with your configuration:
+
+Edit `.env` with your configuration:
 
 ```env
 # Database Configuration
 DATABASE_URL=postgresql://username:password@localhost:5432/ticketing_system
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=ticketing_system
-DB_USER=username
-DB_PASSWORD=password
 
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-here
@@ -345,10 +338,6 @@ JWT_REFRESH_EXPIRES_IN=7d
 # Application Configuration
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-nextauth-secret-here
-
-# i18n Configuration
-DEFAULT_LOCALE=en
-SUPPORTED_LOCALES=en,ar
 
 # SLA Configuration
 DEFAULT_SLA_TIMEOUT_MINUTES=15
@@ -361,12 +350,6 @@ SYSTEM_USER_ID=1
 # Mapbox Configuration
 NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your-mapbox-token-here
 
-# Email Configuration (Nodemailer)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-EMAIL_FROM=noreply@ticketing.com
 ```
 
 4. **Set up the database**
