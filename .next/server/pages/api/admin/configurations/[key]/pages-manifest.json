@@ -1,0 +1,3 @@
+{
+  "/api/admin/configurations/[key]": "pages/api/admin/configurations/[key].js"
+}

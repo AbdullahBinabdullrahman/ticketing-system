@@ -1,0 +1,3 @@
+{
+  "/api/cron/sla-check": "pages/api/cron/sla-check.js"
+}

@@ -1,0 +1,3 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["chunks/projects_ticketing-platform_edge-wrapper_9e2470c0.js",22321,(e,t,r)=>{self._ENTRIES||={};let h=Promise.resolve().then(()=>e.i(48418));h.catch(()=>{}),self._ENTRIES.middleware_middleware=new Proxy(h,{get(e,t){if("then"===t)return(t,r)=>e.then(t,r);let r=(...r)=>e.then(e=>(0,e[t])(...r));return r.then=(r,h)=>e.then(e=>e[t]).then(r,h),r}})}]);
+
+//# sourceMappingURL=projects_ticketing-platform_edge-wrapper_9e2470c0.js.map

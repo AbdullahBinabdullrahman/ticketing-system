@@ -1,0 +1,3 @@
+{
+  "/api/partner/requests/[id]/accept": "pages/api/partner/requests/[id]/accept.js"
+}

@@ -1,0 +1,3 @@
+{
+  "/api/auth/forgot-password": "pages/api/auth/forgot-password.js"
+}

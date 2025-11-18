@@ -1,0 +1,13 @@
+var R=require("../../../chunks/ssr/[turbopack]_runtime.js")("server/pages/admin/requests/queue.js")
+R.c("server/chunks/ssr/[root-of-the-server]__a7568abc._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__5db52f66._.js")
+R.c("server/chunks/ssr/projects_ticketing-platform_f0378686._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__fcdfec23._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__370783f6._.js")
+R.c("server/chunks/ssr/[externals]_next_dist_compiled_@opentelemetry_api_2f2eda7e._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__6294ca13._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__28dbe677._.js")
+R.c("server/chunks/ssr/projects_ticketing-platform_public_locales_f4bb17f4._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0c2a4bd3._.js")
+R.m(19752)
+module.exports=R.m(19752).exports

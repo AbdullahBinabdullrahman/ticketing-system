@@ -1,0 +1,3 @@
+{
+  "/api/auth/refresh": "pages/api/auth/refresh.js"
+}

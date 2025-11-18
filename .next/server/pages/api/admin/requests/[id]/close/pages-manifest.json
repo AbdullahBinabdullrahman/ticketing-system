@@ -1,0 +1,3 @@
+{
+  "/api/admin/requests/[id]/close": "pages/api/admin/requests/[id]/close.js"
+}

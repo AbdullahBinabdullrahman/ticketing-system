@@ -1,0 +1,10 @@
+var R=require("../../../../../chunks/[turbopack]_runtime.js")("server/pages/api/admin/requests/[id]/timeline.js")
+R.c("server/chunks/projects_ticketing-platform_ef8a0e52._.js")
+R.c("server/chunks/[root-of-the-server]__e074f7a0._.js")
+R.c("server/chunks/[root-of-the-server]__09023006._.js")
+R.c("server/chunks/[root-of-the-server]__be03d158._.js")
+R.c("server/chunks/[root-of-the-server]__d1b477b4._.js")
+R.c("server/chunks/projects_ticketing-platform_lib_services_requestService_ts_2b57f237._.js")
+R.c("server/chunks/projects_ticketing-platform_lib_services_notificationService_ts_ac0ecab8._.js")
+R.m(845)
+module.exports=R.m(845).exports
